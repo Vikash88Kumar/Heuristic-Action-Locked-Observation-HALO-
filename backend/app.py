@@ -239,10 +239,16 @@ def result(filename):
 @app.route("/outputs/<path:filename>", methods=["GET"])
 def serve_output(filename):
     output_path = os.path.join(OUTPUTS_DIR, filename)
-    if filename.lower().endswith(".mp4") and os.path.isfile(output_path) and not filename.endswith(".h264.mp4"):
+    if not os.path.isfile(output_path):
+        return jsonify({"error": "File not found"}), 404
+
+    target_file = filename
+    if filename.lower().endswith(".mp4") and not filename.endswith(".h264.mp4"):
         converted_name = filename + ".h264.mp4"
         converted_path = os.path.join(OUTPUTS_DIR, converted_name)
-        if not os.path.isfile(converted_path):
+        if os.path.isfile(converted_path):
+            target_file = converted_name
+        else:
             try:
                 import subprocess, shutil
                 ffmpeg_exe = shutil.which("ffmpeg") or "ffmpeg"
@@ -251,14 +257,14 @@ def serve_output(filename):
                     "-vcodec", "libx264", "-pix_fmt", "yuv420p", converted_path
                 ], capture_output=True, text=True, timeout=120)
                 if res.returncode == 0 and os.path.isfile(converted_path):
-                    return send_from_directory(OUTPUTS_DIR, converted_name, mimetype="video/mp4")
+                    target_file = converted_name
             except Exception as e:
                 print(f"Auto-convert error for {filename}: {e}", flush=True)
-        else:
-            return send_from_directory(OUTPUTS_DIR, converted_name, mimetype="video/mp4")
 
-    mimetype = "video/mp4" if filename.lower().endswith(".mp4") else None
-    return send_from_directory(OUTPUTS_DIR, filename, mimetype=mimetype)
+    mimetype = "video/mp4" if target_file.lower().endswith(".mp4") else None
+    response = send_from_directory(OUTPUTS_DIR, target_file, mimetype=mimetype, conditional=True)
+    response.headers["Accept-Ranges"] = "bytes"
+    return response
 
 
 # --------------------------------------------------------------------------
