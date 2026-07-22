@@ -11,5 +11,4 @@ outputs/*
 uploads/*
 ffmpeg_trace.log
 
-# Comment the line below if you want to bundle model weights directly inside the image
-models/*.pt
+# models/*.pt
