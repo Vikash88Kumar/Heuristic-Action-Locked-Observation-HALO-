@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HALO — Match Intelligence Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    /* Core surfaces */
+    --bg:            #0A1512;
+    --bg-alt:        #0D1A16;
+    --panel:         #101E19;
+    --panel-alt:     #14261F;
+    --panel-raised:  #182D25;
+    --border:        #24382F;
+    --border-soft:   #1A2921;
+    --border-strong: #345245;
+
+    /* Accents */
+    --gold:          #CBA052;
+    --gold-dim:      #8C7239;
+    --gold-soft:     rgba(203,160,82,0.12);
+    --cyan:          #3FD8AE;
+    --cyan-dim:      #2A8F72;
+    --cyan-soft:     rgba(63,216,174,0.12);
+    --coral:         #F0785C;
+    --coral-soft:    rgba(240,120,92,0.12);
+    --violet:        #B18CE0;
+    --violet-soft:   rgba(177,140,224,0.12);
+
+    --team-a:        #3FD8AE;
+    --team-b:        #CBA052;
+
+    /* Text */
+    --text:          #EEF3EF;
+    --text-dim:      #9FB3A7;
+    --text-faint:    #62796D;
+
+    /* Type */
+    --font-display:  'Space Grotesk', sans-serif;
+    --font-body:     'Inter', sans-serif;
+    --font-mono:     'JetBrains Mono', monospace;
+
+    /* Shape & elevation */
+    --radius-lg:     14px;
+    --radius-md:     10px;
+    --radius-sm:     7px;
+    --shadow-sm:     0 1px 2px rgba(0,0,0,0.28);
+    --shadow-md:     0 6px 20px -8px rgba(0,0,0,0.55);
+    --shadow-lg:     0 18px 48px -16px rgba(0,0,0,0.6);
+  }
+
+  *{ box-sizing:border-box; }
+  html, body{ margin:0; padding:0; background: #0A1512; }
+  ::selection{ background: var(--cyan-soft); color: var(--text); }
+
+  .jiq-root{
+    background:
+      radial-gradient(1100px 520px at 18% -8%, rgba(63,216,174,0.05) 0%, transparent 55%),
+      radial-gradient(900px 460px at 100% 0%, rgba(203,160,82,0.045) 0%, transparent 50%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    padding: 32px 28px 48px;
+    margin: 0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .jiq-shell{ max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ---------- Header ---------- */
+  .jiq-header{
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap: wrap; gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .jiq-brand{ display:flex; align-items:center; gap:14px; }
+  .jiq-mark{
+    width:40px; height:40px; border-radius:10px;
+    background: linear-gradient(155deg, var(--gold) 0%, #7C5F2C 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--font-display); font-weight:700; font-size:17px; color:#0E1A15;
+    flex-shrink:0; box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .jiq-brand-copy{ display:flex; flex-direction:column; gap:2px; }
+  .jiq-brand h1{
+    font-family: var(--font-display); font-weight:700; letter-spacing:0.01em;
+    font-size:19px; margin:0; color:var(--text);
+    display:flex; align-items:center; gap:9px;
+  }
+  .jiq-brand h1 .version{
+    font-family: var(--font-mono); font-size:10px; font-weight:500; color:var(--text-faint);
+    border:1px solid var(--border); border-radius:5px; padding:2px 6px; letter-spacing:0.02em;
+  }
+  .jiq-brand p{ margin:0; font-size:12px; color:var(--text-faint); letter-spacing:0.01em; }
+
+  .jiq-header-right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .jiq-pill{
+    display:flex; align-items:center; gap:7px;
+    font-family: var(--font-mono); font-size:11.5px; color:var(--text-dim);
+    background: var(--panel); border:1px solid var(--border-soft);
+    padding:7px 12px; border-radius: 8px; line-height:1;
+  }
+  .jiq-pill.link{ text-decoration:none; transition: border-color .15s ease, color .15s ease; }
+  .jiq-pill.link:hover{ color:var(--text); border-color:var(--border-strong); }
+  .jiq-pill svg{ width:13px; height:13px; flex-shrink:0; opacity:0.8; }
+
+  .jiq-status-chip{
+    display:flex; align-items:center; gap:7px;
+    font-family: var(--font-mono); font-size:11px; letter-spacing:0.04em;
+    padding:7px 12px; border-radius:8px; text-transform:uppercase; font-weight:500;
+    border:1px solid var(--border-soft); background: var(--panel); color: var(--text-dim);
+  }
+  .jiq-status-chip.busy{ color:#FFAF95; background: rgba(240,120,92,0.09); border-color: rgba(240,120,92,0.3); }
+  .jiq-status-chip.ready{ color: var(--cyan); background: var(--cyan-soft); border-color: rgba(63,216,174,0.3); }
+  .jiq-status-chip .dot{ width:6px; height:6px; border-radius:50%; background: currentColor; }
+  .jiq-status-chip.busy .dot{ animation: pulseDot 1.4s ease-in-out infinite; }
+
+  @keyframes pulseDot{ 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:0.3; transform:scale(0.72);} }
+
+  .jiq-backend{ display:flex; align-items:center; gap:6px; }
+  .jiq-backend input[type=text]{
+    background:var(--bg-alt); border:1px solid var(--border-soft); border-radius:6px;
+    color:var(--text); font-family:var(--font-mono); font-size:11px; padding:5px 8px; width:158px;
+  }
+  .jiq-backend input[type=text]:focus{ outline:none; border-color:var(--cyan-dim); }
+  .jiq-btn-ghost{
+    cursor:pointer; border:1px solid var(--border-soft); border-radius:6px;
+    background:var(--panel-raised); color:var(--text-dim); font-family:var(--font-mono);
+    font-size:11px; padding:6px 10px; transition: border-color .15s ease, color .15s ease;
+  }
+  .jiq-btn-ghost:hover{ color:var(--text); border-color:var(--border-strong); }
+
+  /* ---------- Section labels ---------- */
+  .jiq-section-label{
+    display:flex; align-items:center; gap:10px; margin: 4px 2px 2px;
+  }
+  .jiq-section-label .idx{
+    font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint);
+    border:1px solid var(--border-soft); border-radius:5px; padding:2px 6px;
+  }
+  .jiq-section-label h2{
+    font-family:var(--font-display); font-size:13px; font-weight:600; letter-spacing:0.02em;
+    text-transform:uppercase; color:var(--text-dim); margin:0;
+  }
+
+  /* ---------- Video Upload Section (Redesigned & Premium) ---------- */
+  .jiq-upload-row { width: 100%; margin: 0 0 4px; }
+  .upload-card {
+    background: linear-gradient(145deg, rgba(16, 30, 25, 0.95), rgba(12, 22, 18, 0.98));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    transition: border-color .3s ease, box-shadow .3s ease;
+  }
+  .upload-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), var(--gold), transparent);
+    opacity: 0.85;
+  }
+
+  .upload-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .upload-header-left { display: flex; align-items: center; gap: 14px; }
+  .upload-card-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 30% 30%, rgba(63, 216, 174, 0.18), transparent 70%), var(--panel-raised);
+    border: 1px solid rgba(63, 216, 174, 0.3);
+    color: var(--cyan);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .upload-card-icon svg { width: 22px; height: 22px; }
+  .upload-title-group { display: flex; flex-direction: column; gap: 2px; }
+  .upload-label {
+    font-family: var(--font-display); font-size: 16px; font-weight: 700;
+    letter-spacing: 0.01em; color: var(--text);
+  }
+  .upload-sub { font-size: 12px; color: var(--text-faint); }
+  .preset-label {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-soft);
+    padding: 5px 12px; border-radius: 6px;
+  }
+
+  /* Interactive Drop Zone */
+  .drop-zone-inner {
+    border: 2px dashed rgba(63, 216, 174, 0.35);
+    border-radius: var(--radius-md);
+    background: linear-gradient(180deg, rgba(20, 38, 31, 0.4), rgba(10, 21, 18, 0.6));
+    padding: 32px 24px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+  .drop-zone-inner:hover, .drop-zone-inner.is-dragover {
+    border-color: var(--cyan);
+    background: linear-gradient(180deg, rgba(63, 216, 174, 0.09), rgba(20, 38, 31, 0.65));
+    box-shadow: 0 0 24px -4px rgba(63, 216, 174, 0.25), inset 0 0 12px rgba(63, 216, 174, 0.1);
+    transform: translateY(-1px);
+  }
+  .drop-zone-inner.is-dragover { transform: scale(1.01); }
+
+  .file-input-hidden {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer; z-index: 10;
+  }
+
+  .drop-zone-cta {
+    display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none;
+  }
+  .drop-icon-pulse {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--cyan-soft); border: 1px solid rgba(63, 216, 174, 0.3);
+    color: var(--cyan); display: flex; align-items: center; justify-content: center;
+    margin-bottom: 2px; transition: transform 0.3s ease;
+  }
+  .drop-icon-pulse svg { width: 26px; height: 26px; }
+  .drop-zone-inner:hover .drop-icon-pulse {
+    transform: scale(1.1); box-shadow: 0 0 18px var(--cyan-dim);
+  }
+
+  .drop-text-primary {
+    font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--text);
+  }
+  .browse-link { color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; }
+  .drop-text-secondary { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+
+  /* Selected File Card Details */
+  .file-details-card {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel-raised); border: 1px solid rgba(63, 216, 174, 0.4);
+    border-radius: 10px; padding: 14px 18px; width: 100%; max-width: 580px; margin: 0 auto;
+    box-shadow: var(--shadow-md); position: relative; z-index: 12;
+  }
+  .file-info-left { display: flex; align-items: center; gap: 14px; }
+  .file-format-icon {
+    font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.05em;
+    color: #0E1A15; background: linear-gradient(135deg, var(--cyan), #2A8F72);
+    padding: 8px 12px; border-radius: 6px; text-transform: uppercase;
+  }
+  .file-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .file-name { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; color: var(--text); word-break: break-all; }
+  .file-size { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+  .btn-remove-file {
+    background: rgba(240, 120, 92, 0.12); border: 1px solid rgba(240, 120, 92, 0.3);
+    color: var(--coral); font-family: var(--font-mono); font-size: 11.5px; padding: 6px 12px;
+    border-radius: 6px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .btn-remove-file:hover { background: rgba(240, 120, 92, 0.25); border-color: var(--coral); }
+
+  /* Upload Action Bar & Button */
+  .upload-action-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; flex-wrap: wrap;
+  }
+  .upload-status-info { display: flex; align-items: center; gap: 8px; }
+  .upload-status { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); }
+  .btn-upload-primary {
+    cursor: pointer; border: 1px solid rgba(203, 160, 82, 0.5); border-radius: 10px;
+    background: linear-gradient(135deg, var(--gold) 0%, #A37E3A 100%);
+    color: #0E1A15; padding: 12px 24px; font-weight: 700; font-size: 13.5px;
+    font-family: var(--font-display); display: flex; align-items: center; gap: 8px;
+    letter-spacing: 0.02em; box-shadow: 0 4px 16px rgba(203, 160, 82, 0.25);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-upload-primary:hover:not(:disabled) {
+    filter: brightness(1.12); box-shadow: 0 6px 20px rgba(203, 160, 82, 0.4); transform: translateY(-1px);
+  }
+  .btn-upload-primary:active:not(:disabled) { transform: translateY(1px); }
+  .btn-upload-primary:disabled { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.5); box-shadow: none; }
+
+  .progress-container { margin-top: 14px; }
+  .progress-track {
+    height: 10px; background: var(--bg-alt); border-radius: 999px; overflow: hidden;
+    border: 1px solid var(--border-soft); position: relative;
+  }
+  .progress-fill {
+    width: 0%; height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan), var(--gold));
+    background-size: 200% 100%; animation: shimmerProgress 2s linear infinite;
+    transition: width 0.35s ease; display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 6px; font-size: 9px; color: #08211a; font-weight: 700; font-family: var(--font-mono);
+  }
+  @keyframes shimmerProgress {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* ---------- Layout grid ---------- */
+  .jiq-grid{ display:grid; grid-template-columns: 1.62fr 1fr; gap:16px; align-items:start; }
+  @media (max-width: 980px){ .jiq-grid{ grid-template-columns: 1fr; } }
+
+  .jiq-panel{
+    background: var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow:hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .jiq-panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 13px 18px; border-bottom:1px solid var(--border-soft);
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent);
+  }
+  .jiq-panel-head h2{
+    font-family: var(--font-display); font-size:12.5px; letter-spacing:0.05em;
+    text-transform:uppercase; margin:0; color:var(--text);
+    display:flex; align-items:center; gap:9px; font-weight:600;
+  }
+  .jiq-panel-head h2 .bullet{ width:6px;height:6px;border-radius:50%; background:var(--cyan); box-shadow:0 0 6px rgba(63,216,174,0.6); }
+  .jiq-tag{
+    font-family: var(--font-mono); font-size:10px; color:var(--text-faint);
+    border:1px solid var(--border-soft); padding:3px 9px; border-radius:999px; white-space:nowrap;
+  }
+
+  /* ---------- Video panel ---------- */
+  .jiq-video{
+    position:relative; width:100%; aspect-ratio: 16/9;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) 0 0 / 44px 100%,
+      #0E1C17;
+    overflow:hidden;
+  }
+  .jiq-video::before{
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,0.5) 100%);
+    pointer-events:none; z-index:5;
+  }
+  .pitch-line{ position:absolute; border-color:rgba(255,255,255,0.1); }
+  .pitch-halfway{ left:50%; top:0; bottom:0; width:0; border-left:1.5px solid rgba(255,255,255,0.1); }
+  .pitch-circle{
+    left:50%; top:50%; width:150px; height:150px; border-radius:50%;
+    border:1.5px solid rgba(255,255,255,0.1); transform:translate(-50%,-50%);
+  }
+  .pitch-spot{ left:50%; top:50%; width:5px;height:5px; border-radius:50%; background:rgba(255,255,255,0.18); transform:translate(-50%,-50%); }
+
+  .video-empty-note{
+    position:absolute; z-index:4; left:50%; top:50%; transform:translate(-50%,-50%);
+    font-family:var(--font-mono); font-size:12px; color:var(--text-dim); line-height:1.6;
+    background: rgba(8,18,14,0.72); padding:16px 20px; border-radius:10px; text-align:center;
+    border: 1px solid var(--border-soft); max-width:66%; backdrop-filter: blur(2px);
+  }
+
+  .video-preview{ position:absolute; inset:0; z-index:1; overflow:hidden; background:#07120d; }
+  .video-preview video{ width:100%; height:100%; object-fit:contain; background:#000; }
+
+  /* ---------- Pipeline ---------- */
+  .jiq-pipeline{ padding:18px 18px 20px; }
+  .pipeline-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:0; position:relative; }
+  @media (max-width:640px){ .pipeline-row{ grid-template-columns:1fr; } }
+  .pipeline-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+
+  .stage{
+    background: var(--panel-alt); border:1px solid var(--border-soft);
+    border-radius: var(--radius-md); padding:14px 15px; position:relative;
+    transition: border-color .4s ease, box-shadow .4s ease, background .4s ease;
+  }
+  .stage.active{
+    border-color: var(--cyan-dim); background: var(--panel-raised);
+    box-shadow: 0 0 0 1px rgba(63,216,174,0.18), var(--shadow-md);
+  }
+  .stage.complete{ border-color: rgba(203,160,82,0.4); }
+  .stage.complete .stage-num::after{ content:''; }
+  .stage-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .stage-name{ font-family:var(--font-display); font-size:13.5px; letter-spacing:0.01em; font-weight:600; color:var(--text); }
+  .stage.active .stage-name{ color:var(--cyan); }
+  .stage-num{
+    font-family:var(--font-mono); font-size:10px; color:var(--text-faint);
+    display:flex; align-items:center; gap:5px;
+  }
+  .stage-num .check{ width:12px; height:12px; color:var(--gold); opacity:0; transition:opacity .3s ease; }
+  .stage.complete .stage-num .check{ opacity:1; }
+  .stage-chips{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+  .chip{ font-size:10px; font-family:var(--font-mono); color:var(--text-dim); background:rgba(255,255,255,0.03); border:1px solid var(--border-soft); padding:3px 7px; border-radius:5px; }
+  .stage.active .chip{ color:var(--text); border-color:rgba(63,216,174,0.25); }
+  .stage-hw{ font-family:var(--font-mono); font-size:10px; color:var(--text-faint); display:flex; align-items:center; gap:6px; padding-top:9px; border-top:1px solid var(--border-soft); }
+  .stage-hw .hdot{ width:5px;height:5px;border-radius:50%; background:var(--border); flex-shrink:0; }
+  .stage.active .stage-hw .hdot{ background:var(--cyan); box-shadow:0 0 5px var(--cyan); }
+  .stage.active .stage-hw{ color:var(--text-dim); }
+
+  /* ---------- Side feeds ---------- */
+  .jiq-side{ display:flex; flex-direction:column; gap:16px; }
+  .feed{ max-height:242px; overflow-y:auto; padding:4px 0; }
+  .feed::-webkit-scrollbar{ width:6px; }
+  .feed::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+  .feed-empty{ padding:22px 18px; font-family:var(--font-mono); font-size:11.5px; color:var(--text-faint); text-align:center; }
+
+  .commentary-item{ display:flex; gap:11px; padding:11px 18px; border-bottom:1px solid var(--border-soft); animation: itemIn .3s ease; }
+  .commentary-item:last-child{ border-bottom:none; }
+  @keyframes itemIn{ from{ opacity:0; transform:translateY(-4px);} to{ opacity:1; transform:translateY(0);} }
+  .c-avatar{
+    flex-shrink:0; width:26px; height:26px; border-radius:7px;
+    background:var(--panel-raised); border:1px solid var(--border-soft);
+    display:flex; align-items:center; justify-content:center; font-size:12.5px;
+  }
+  .c-body p{ margin:0; font-size:12.5px; line-height:1.5; color:var(--text); }
+  .c-meta{ margin-top:3px; font-family:var(--font-mono); font-size:10px; color:var(--text-faint); }
+  .commentary-item.shot .c-avatar{ background:var(--coral-soft); border-color:rgba(240,120,92,0.4); }
+  .commentary-item.flag .c-avatar{ background:var(--gold-soft); border-color:rgba(203,160,82,0.4); }
+
+  .log-item{
+    font-family:var(--font-mono); font-size:11px; padding:8px 18px; border-bottom:1px solid var(--border-soft);
+    color:var(--text-dim); animation:itemIn .3s ease; display:grid; grid-template-columns:44px 88px 1fr; gap:8px; align-items:center;
+  }
+  .log-item:last-child{ border-bottom:none; }
+  .log-item:nth-child(even){ background: rgba(255,255,255,0.012); }
+  .log-t{ color:var(--text-faint); flex-shrink:0; }
+  .log-ev{ font-weight:600; padding:2px 7px; border-radius:5px; flex-shrink:0; width:fit-content; font-size:10px; letter-spacing:0.02em; }
+  .ev-TOUCH{ color:var(--text-dim); background:rgba(255,255,255,0.04); }
+  .ev-PASS{ color:var(--cyan); background:var(--cyan-soft); }
+  .ev-SHOT{ color:var(--coral); background:var(--coral-soft); }
+  .ev-FLAG{ color:var(--gold); background:var(--gold-soft); }
+  .ev-INTERCEPTION{ color:var(--violet); background:var(--violet-soft); }
+
+  /* ---------- KPI cards ---------- */
+  .kpi{
+    background:var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius-md);
+    padding:15px 16px; box-shadow: var(--shadow-sm); position:relative;
+  }
+  .kpi-label{
+    font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--text-faint); margin-bottom:10px; display:flex; align-items:center; gap:6px;
+  }
+  .kpi-label svg{ width:12px; height:12px; opacity:0.7; flex-shrink:0; }
+  .kpi-value{ font-family:var(--font-display); font-size:23px; font-weight:700; color:var(--text); letter-spacing:-0.01em; }
+  .kpi-value span{ font-size:13px; color:var(--text-faint); font-family:var(--font-mono); font-weight:400; }
+  .kpi-sub{ margin-top:6px; font-size:10.5px; color:var(--text-dim); }
+  .kpi-sub.up{ color:var(--cyan); }
+
+  .jiq-footer-note{
+    text-align:center; font-size:11px; color:var(--text-faint); padding:12px 0 2px;
+    font-family:var(--font-mono); letter-spacing:0.01em;
+  }
+  .jiq-footer-note b{ color:var(--text-dim); }
+
+  /* ---------- Tactics panel ---------- */
+  #tacticsButton:disabled{ opacity:0.4; cursor:not-allowed; }
+  .tactics-toolbar{
+    display:flex; align-items:center; gap:12px; padding: 14px 18px 12px; flex-wrap:wrap;
+  }
+  .tactics-toolbar button{
+    cursor:pointer; border:1px solid transparent; border-radius:8px; background:var(--gold);
+    color:#151005; padding:10px 18px; font-weight:700; font-family:var(--font-body); font-size:12.5px;
+    transition: filter .15s ease, transform .1s ease;
+  }
+  .tactics-toolbar button:hover:not(:disabled){ filter:brightness(1.08); }
+  .tactics-toolbar button:active:not(:disabled){ transform: translateY(1px); }
+  .tactics-progress-wrap{ padding: 0 18px 16px; }
+
+  .tactics-body{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; padding: 0 18px 18px; }
+  .tactics-body .full-width{ grid-column: 1 / -1; }
+  .tactics-team{ background:var(--panel-alt); border:1px solid var(--border-soft); border-radius:var(--radius-md); padding:16px; }
+  .tactics-team h3{ margin:0 0 10px; font-family:var(--font-display); font-size:14.5px; font-weight:600; color:var(--text); padding-bottom:9px; border-bottom:1px solid var(--border-soft); }
+  .tactics-team h4{ margin:14px 0 5px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-faint); font-family:var(--font-mono); font-weight:500; }
+  .tactics-team ul{ margin:0; padding-left:18px; font-size:12.5px; color:var(--text); line-height:1.55; }
+  .tactics-team ul li{ margin-bottom:3px; }
+  .tactics-block{ background:var(--panel-alt); border:1px solid var(--border-soft); border-radius:var(--radius-md); padding:16px; font-size:13px; line-height:1.6; }
+  .tactics-block h3{ margin:0 0 10px; font-family:var(--font-display); font-size:14.5px; font-weight:600; color:var(--text); }
+  .tactics-moment{ font-size:12.5px; padding:8px 0; border-bottom:1px dashed var(--border-soft); }
+  .tactics-moment:last-child{ border-bottom:none; }
+  @media (max-width: 900px){ .tactics-body{ grid-template-columns: 1fr; } }
+
+  /* Tactics visualizations */
+  .tactics-viz-section {
+    grid-column: 1 / -1;
+    margin: 4px 18px 18px;
+    border-top: 1px solid var(--border-soft);
+    padding-top: 18px;
+  }
+  .tactics-viz-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--border-soft);
+    overflow-x: auto;
+  }
+  .tactics-viz-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-faint);
+    padding: 9px 4px;
+    margin-right: 22px;
+    font-size: 12px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing:0.01em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .tactics-viz-tab:hover {
+    color: var(--text);
+  }
+  .tactics-viz-tab.active {
+    color: var(--cyan);
+    border-bottom-color: var(--cyan);
+  }
+  .tactics-viz-content {
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+  .tactics-viz-content.active {
+    display: block;
+  }
+  .tactics-viz-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  @media (min-width: 768px) {
+    .tactics-viz-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .tactics-viz-card {
+    background: var(--panel-alt);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    text-align: center;
+  }
+  .tactics-viz-card h4 {
+    margin: 0 0 10px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+  .tactics-viz-card img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-soft);
+    background: #000;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- About section ---------- */
+  .jiq-about-section {
+    margin-top: 12px;
+    padding: 32px 0 4px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .jiq-about-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .jiq-about-header .accent-bar {
+    width: 4px;
+    height: 28px;
+    background: linear-gradient(180deg, var(--cyan), var(--gold));
+    border-radius: 4px;
+  }
+  .jiq-about-header h2 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+    letter-spacing: 0.005em;
+  }
+  .jiq-about-content {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  @media (max-width: 860px) {
+    .jiq-about-content { grid-template-columns: 1fr; }
+  }
+  .jiq-about-text h3 {
+    font-family: var(--font-display);
+    color: var(--cyan);
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 14px 0;
+  }
+  .jiq-about-text p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    margin: 0 0 14px 0;
+  }
+  .jiq-about-text p b {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .jiq-about-image img {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-lg);
+    display: block;
+  }
+
+  /* ---------- Video processing overlay ---------- */
+  .proc-overlay{
+    position:absolute; inset:0; z-index:6; display:none;
+    align-items:center; justify-content:center; flex-direction:column; gap:14px;
+    background: linear-gradient(180deg, rgba(7,15,12,0.72), rgba(7,15,12,0.86));
+    backdrop-filter: blur(1.5px);
+  }
+  .proc-overlay.is-active{ display:flex; }
+
+  .proc-corner{ position:absolute; width:26px; height:26px; border-color: rgba(63,216,174,0.55); opacity:0; animation: cornerFade .5s ease forwards; }
+  .proc-corner.tl{ top:14px; left:14px; border-top:2px solid; border-left:2px solid; border-radius:4px 0 0 0; animation-delay:.05s; }
+  .proc-corner.tr{ top:14px; right:14px; border-top:2px solid; border-right:2px solid; border-radius:0 4px 0 0; animation-delay:.1s; }
+  .proc-corner.bl{ bottom:14px; left:14px; border-bottom:2px solid; border-left:2px solid; border-radius:0 0 0 4px; animation-delay:.1s; }
+  .proc-corner.br{ bottom:14px; right:14px; border-bottom:2px solid; border-right:2px solid; border-radius:0 0 4px 0; animation-delay:.15s; }
+  @keyframes cornerFade{ to{ opacity:1; } }
+
+  .proc-scanline{
+    position:absolute; left:6%; right:6%; height:2px; top:14px;
+    background: linear-gradient(90deg, transparent, var(--cyan) 20%, var(--cyan) 80%, transparent);
+    box-shadow: 0 0 12px 1px rgba(63,216,174,0.7);
+    animation: scanSweep 2.6s cubic-bezier(.45,0,.55,1) infinite;
+    opacity:0.85;
+  }
+  @keyframes scanSweep{
+    0%{ top:10%; opacity:0; }
+    8%{ opacity:.9; }
+    50%{ top:88%; opacity:.9; }
+    58%{ opacity:0; }
+    100%{ top:10%; opacity:0; }
+  }
+
+  .proc-grid-glow{
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(0deg, rgba(63,216,174,0.05) 0 1px, transparent 1px 26px);
+    mix-blend-mode: screen; opacity:.5; pointer-events:none;
+  }
+
+  .proc-ring-wrap{ position:relative; width:104px; height:104px; }
+  .proc-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .proc-ring-track{ fill:none; stroke:rgba(255,255,255,0.08); stroke-width:5; }
+  .proc-ring-fill{
+    fill:none; stroke:var(--cyan); stroke-width:5; stroke-linecap:round;
+    stroke-dasharray: 314; stroke-dashoffset: 314;
+    transition: stroke-dashoffset .35s ease;
+    filter: drop-shadow(0 0 6px rgba(63,216,174,0.65));
+  }
+  .proc-ring-center{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:1px;
+  }
+  .proc-ring-pct{ font-family:var(--font-display); font-size:20px; font-weight:700; color:var(--text); }
+  .proc-ring-label{ font-family:var(--font-mono); font-size:8.5px; letter-spacing:0.06em; color:var(--text-faint); text-transform:uppercase; }
+
+  .proc-caption{ text-align:center; }
+  .proc-caption .msg{ font-family:var(--font-mono); font-size:12px; color:var(--cyan); letter-spacing:0.01em; }
+  .proc-caption .sub{ margin-top:5px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); display:flex; align-items:center; justify-content:center; gap:6px; }
+  .proc-caption .sub .blink{ width:5px; height:5px; border-radius:50%; background:var(--cyan); animation: pulseDot 1.1s ease-in-out infinite; }
+
+  .proc-dots{ display:flex; gap:4px; }
+  .proc-dots span{ width:4px; height:4px; border-radius:50%; background:var(--text-faint); animation: dotBounce 1.2s ease-in-out infinite; }
+  .proc-dots span:nth-child(2){ animation-delay:.15s; }
+  .proc-dots span:nth-child(3){ animation-delay:.3s; }
+  @keyframes dotBounce{ 0%,60%,100%{ opacity:.35; transform:translateY(0);} 30%{ opacity:1; transform:translateY(-3px);} }
+
+  /* ---------- Pipeline flow connectors (vertical, single column) ---------- */
+  .pipeline-row{ display:flex; flex-direction:column; align-items:stretch; gap:0; }
+  .pipeline-row .stage{ flex:none; min-width:0; }
+  .stage-connector{
+    height:26px; width:100%; flex-shrink:0; position:relative; display:flex; align-items:center; justify-content:center;
+  }
+  .stage-connector::before{
+    content:''; position:absolute; top:3px; bottom:3px; left:50%; width:1px;
+    background: var(--border-soft); transform:translateX(-50%);
+  }
+  .stage-connector .flow-dot{
+    position:absolute; left:50%; width:5px; height:5px; border-radius:50%;
+    background:var(--cyan); box-shadow:0 0 6px var(--cyan); transform:translate(-50%,-50%);
+    opacity:0; top:0;
+  }
+  .pipeline-row.is-processing .stage-connector::before{ background: rgba(63,216,174,0.3); }
+  .pipeline-row.is-processing .stage-connector .flow-dot{
+    animation: flowMoveV 1.6s linear infinite; opacity:1;
+  }
+  .stage-connector .flow-dot:nth-child(2){ animation-delay:.4s; }
+  .stage-connector .flow-dot:nth-child(3){ animation-delay:.8s; }
+  @keyframes flowMoveV{ 0%{ top:0; opacity:0; } 12%{ opacity:1; } 88%{ opacity:1; } 100%{ top:100%; opacity:0; } }
+
+  @keyframes stagePulse{
+    0%,100%{ box-shadow: 0 0 0 1px rgba(63,216,174,0.18), var(--shadow-md); }
+    50%{ box-shadow: 0 0 0 1px rgba(63,216,174,0.4), var(--shadow-md), 0 0 22px -4px rgba(63,216,174,0.35); }
+  }
+  .stage.active{ animation: stagePulse 1.8s ease-in-out infinite; }
+
+  /* ---------- Model pipeline concept animation (Video -> Feature Extraction -> Results) ---------- */
+  .pipeline-anim-wrap{
+    border-radius: var(--radius-lg);
+    background: var(--panel-alt);
+    border: 1px solid var(--border-soft);
+    padding: 6px 4px 0;
+    overflow: hidden;
+  }
+  .pipeline-anim{ width:100%; height:auto; display:block; }
+
+  .pa-glow-a{ stop-color: var(--cyan); stop-opacity: 0.18; }
+  .pa-glow-b{ stop-color: var(--cyan); stop-opacity: 0; }
+
+  .pa-guide{ stroke: var(--border-soft); stroke-width: 1.2; fill: none; }
+  .pa-node-core{ fill: var(--panel-raised); stroke: var(--border-strong); stroke-width: 1.3; }
+  .pa-icon{ fill: var(--cyan); }
+  .pa-check{ stroke: var(--gold); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .pa-ring{ fill: none; stroke: var(--cyan); stroke-width: 1.3; opacity: 0; transform-box: fill-box; transform-origin: center; }
+  .pa-ring.pa-in{ animation: paRingPulse 2.6s ease-out infinite; }
+  .pa-ring.pa-out{ stroke: var(--gold); animation: paRingPulse 2.6s ease-out infinite; animation-delay: 1.3s; }
+  @keyframes paRingPulse{
+    0%{ opacity:0; transform: scale(1); }
+    10%{ opacity:.6; }
+    100%{ opacity:0; transform: scale(1.6); }
+  }
+
+  .pa-feat-halo{ fill: var(--cyan-soft); }
+  .pa-feat-node{ fill: var(--cyan); }
+  .pa-feat-edge{ stroke: var(--border-soft); stroke-width: 1; fill: none; }
+  .pa-feat-edge.pa-active{ stroke: var(--cyan-dim); stroke-dasharray: 4 5; animation: paEdgeFlow 1.1s linear infinite; }
+  @keyframes paEdgeFlow{ to{ stroke-dashoffset: -18; } }
+
+  .pa-particle-a{ fill: var(--cyan); }
+  .pa-particle-b{ fill: var(--gold); }
+  .pa-particle-c{ fill: var(--coral); }
+
+  .pa-label-main{ font-family: var(--font-display); font-size: 13px; font-weight:600; fill: var(--text); letter-spacing:0.02em; }
+  .pa-label-sub{ font-family: var(--font-mono); font-size: 9.5px; fill: var(--text-faint); letter-spacing:0.01em; }
+
+  /* ---------- KPI shimmer (loading state) ---------- */
+  .kpi-value, .metric-players-value{ position:relative; min-height:1.3em; }
+  #kpiStrip.is-loading .kpi-value,
+  #kpiStrip.is-loading .metric-players-value{ color:transparent; }
+  #kpiStrip.is-loading .kpi-value span{ display:none; }
+  #kpiStrip.is-loading .kpi-value::after,
+  #kpiStrip.is-loading .metric-players-value::after{
+    content:''; position:absolute; left:0; top:3px; width:64%; height:16px; border-radius:4px;
+    background: linear-gradient(90deg, var(--panel-raised) 0%, rgba(255,255,255,0.09) 50%, var(--panel-raised) 100%);
+    background-size: 200% 100%; animation: shimmerMove 1.3s ease-in-out infinite;
+  }
+  #kpiStrip.is-loading .possession-bar{ opacity:0.35; }
+  @keyframes shimmerMove{ 0%{ background-position: 200% 0; } 100%{ background-position: -200% 0; } }
+
+  /* ---------- Live Feed tabs (Commentary / Event Log) ---------- */
+  .feed-tabs{ display:flex; align-items:center; gap:4px; }
+  .feed-tab{
+    background:transparent; border:none; cursor:pointer;
+    font-family:var(--font-display); font-weight:600; font-size:11.5px; letter-spacing:0.02em;
+    color:var(--text-faint); padding:5px 4px; border-bottom:2px solid transparent;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .feed-tab:hover{ color:var(--text); }
+  .feed-tab.active{ color:var(--cyan); border-bottom-color:var(--cyan); }
+  .feed-panel-content{ display:none; }
+  .feed-panel-content.active{ display:block; }
+
+  /* ---------- Match Metrics panel ---------- */
+  .metrics-panel-body{ padding: 16px 18px 18px; display:flex; flex-direction:column; gap:16px; }
+  .metrics-featured{ display:grid; grid-template-columns: 1.3fr 1fr; gap:14px; }
+  @media (max-width:760px){ .metrics-featured{ grid-template-columns:1fr; } }
+
+  .metric-feature-card{
+    background:var(--panel-alt); border:1px solid var(--border-soft); border-radius:var(--radius-md);
+    padding:16px 18px;
+  }
+  .metric-feature-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; }
+  .metric-feature-label{ font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-faint); }
+
+  .possession-bar{ height:10px; border-radius:999px; overflow:hidden; display:flex; background:var(--bg-alt); border:1px solid var(--border-soft); }
+  .possession-bar .seg-a{ background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); width:50%; transition: width .5s ease; }
+  .possession-bar .seg-b{ background: linear-gradient(90deg, var(--gold), var(--gold-dim)); width:50%; transition: width .5s ease; }
+  .possession-legend{ display:flex; justify-content:space-between; margin-top:10px; font-family:var(--font-mono); font-size:11.5px; }
+  .possession-legend .team-a{ color:var(--cyan); display:flex; align-items:center; gap:6px; }
+  .possession-legend .team-b{ color:var(--gold); display:flex; align-items:center; gap:6px; }
+  .possession-legend .swatch{ width:8px; height:8px; border-radius:2px; background:currentColor; }
+
+  .metric-players-value{ font-family:var(--font-display); font-size:34px; font-weight:700; color:var(--text); letter-spacing:-0.01em; line-height:1; }
+  .metric-players-value span{ font-size:15px; color:var(--text-faint); font-family:var(--font-mono); font-weight:400; margin-left:4px; }
+
+  .metrics-secondary{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  @media (max-width:860px){ .metrics-secondary{ grid-template-columns:repeat(2,1fr); } }
+
+  /* ---------- Focus states ---------- */
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible{
+    outline: 2px solid var(--cyan-dim); outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="jiq-root">
+  <div class="jiq-shell">
+
+    <div class="jiq-header">
+      <div class="jiq-brand">
+        <div class="jiq-mark">H</div>
+        <div class="jiq-brand-copy">
+          <h1>HALO <span class="version">v2.0</span></h1>
+          <p>Heuristic Action-Locked Observation · Match Intelligence Console</p>
+        </div>
+      </div>
+      <div class="jiq-header-right">
+        <a href="/about" class="jiq-pill link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+          About Project HALO
+        </a>
+        <span class="jiq-pill" id="clipChip">No clip loaded</span>
+        <span class="jiq-status-chip" id="statusChip"><span class="dot"></span><span id="statusChipText">Idle</span></span>
+        <span class="jiq-pill jiq-backend">
+          Backend
+          <input id="apiHostInput" type="text" value="http://127.0.0.1:5000" />
+          <button id="apiHostSave" class="jiq-btn-ghost">Set</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="jiq-upload-row">
+      <div class="upload-card" id="uploadCard">
+        <div class="upload-card-header">
+          <div class="upload-header-left">
+            <div class="upload-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <div class="upload-title-group">
+              <div class="upload-label">Upload Match Video Clip</div>
+              <div class="upload-sub">Runs YOLO detection → ByteTrack tracking → Jersey OCR → 2D Pitch Radar</div>
+            </div>
+          </div>
+          <div class="upload-preset-badge">
+            <span class="preset-label">Supported: MP4, MOV, AVI, MKV, WEBM</span>
+          </div>
+        </div>
+
+        <!-- Interactive Drag & Drop Zone -->
+        <div class="drop-zone-inner" id="dropZone">
+          <input type="file" id="videoUpload" accept="video/*" class="file-input-hidden" />
+          
+          <div class="drop-zone-cta" id="dropZoneCta">
+            <div class="drop-icon-pulse">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="2" y="4" width="20" height="16" rx="3"/>
+                <polygon points="10,9 16,12 10,15"/>
+              </svg>
+            </div>
+            <div class="drop-text-primary">Drag &amp; drop footage here or <span class="browse-link">browse your device</span></div>
+            <div class="drop-text-secondary">Click anywhere inside this area to select your video file</div>
+          </div>
+
+          <!-- File Selected State Card -->
+          <div class="file-details-card" id="fileDetailsCard" style="display:none;">
+            <div class="file-info-left">
+              <div class="file-format-icon" id="fileFormatText">MP4</div>
+              <div class="file-meta">
+                <div class="file-name" id="fileNameText">match_clip.mp4</div>
+                <div class="file-size" id="fileSizeText">0.0 MB</div>
+              </div>
+            </div>
+            <button type="button" class="btn-remove-file" id="btnRemoveFile" title="Remove selected file">✕ Change Video</button>
+          </div>
+        </div>
+
+        <!-- Action Bar & Status -->
+        <div class="upload-action-bar">
+          <div class="upload-status-info">
+            <div class="upload-status" id="uploadStatus">Select or drop a video file above to begin.</div>
+          </div>
+          <button id="uploadButton" class="btn-upload-primary">
+            <span class="btn-icon">⚡</span>
+            <span class="btn-text">Start HALO Analysis</span>
+          </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+          <div class="progress-track">
+            <div class="progress-fill" id="uploadProgressFill">0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="jiq-panel">
+      <div class="jiq-panel-head">
+        <h2><span class="bullet"></span>How HALO Reads a Match</h2>
+        <span class="jiq-tag">Video &rarr; Feature Extraction &rarr; Results</span>
+      </div>
+      <div class="pipeline-anim-wrap">
+        <svg class="pipeline-anim" viewBox="0 0 1200 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram showing video input flowing into a feature-extraction network, which produces match results">
+          <defs>
+            <radialGradient id="paClusterGlow" cx="50%" cy="50%" r="50%">
+              <stop class="pa-glow-a" offset="0%"/>
+              <stop class="pa-glow-b" offset="100%"/>
+            </radialGradient>
+          </defs>
+
+          <!-- ambient glow behind the feature-extraction cluster -->
+          <ellipse cx="600" cy="100" rx="230" ry="95" fill="url(#paClusterGlow)"/>
+
+          <!-- guide tracks: video -> feature cluster -->
+          <path class="pa-guide" d="M110,100 C220,80 330,68 440,65"/>
+          <path class="pa-guide" d="M110,100 C220,120 330,132 460,135"/>
+          <path class="pa-guide" d="M110,100 C250,100 380,105 545,105"/>
+
+          <!-- guide tracks: feature cluster -> results -->
+          <path class="pa-guide" d="M660,60 C820,50 950,65 1090,100"/>
+          <path class="pa-guide" d="M700,105 C850,105 970,100 1090,100"/>
+          <path class="pa-guide" d="M610,140 C800,150 950,130 1090,100"/>
+
+          <!-- internal feature-network edges -->
+          <path class="pa-feat-edge pa-active" d="M440,65 C475,55 495,52 520,50"/>
+          <path class="pa-feat-edge" d="M440,65 C450,95 452,112 460,135"/>
+          <path class="pa-feat-edge" d="M520,50 C530,75 538,92 545,105"/>
+          <path class="pa-feat-edge" d="M460,135 C495,120 518,112 545,105"/>
+          <path class="pa-feat-edge" d="M545,105 C570,120 590,132 610,140"/>
+          <path class="pa-feat-edge pa-active" d="M545,105 C595,85 628,72 660,60"/>
+          <path class="pa-feat-edge" d="M520,50 C575,55 615,58 660,60"/>
+          <path class="pa-feat-edge pa-active" d="M610,140 C645,125 670,116 700,105"/>
+          <path class="pa-feat-edge" d="M660,60 C675,80 688,93 700,105"/>
+
+          <!-- feature-extraction nodes (pulse = features firing) -->
+          <g>
+            <circle class="pa-feat-halo" cx="440" cy="65" r="10"/>
+            <circle class="pa-feat-node" cx="440" cy="65" r="3">
+              <animate attributeName="r" values="2.5;4.5;2.5" dur="1.8s" begin="0s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.55;1;0.55" dur="1.8s" begin="0s" repeatCount="indefinite"/>
+            </circle>
+            <circle class="pa-feat-halo" cx="460" cy="135" r="10"/>
+            <circle class="pa-feat-node" cx="460" cy="135" r="3">
+              <animate attributeName="r" values="2.5;4.5;2.5" dur="1.8s" begin="0.3s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.55;1;0.55" dur="1.8s" begin="0.3s" repeatCount="indefinite"/>
+            </circle>
+            <circle class="pa-feat-halo" cx="520" cy="50" r="10"/>
+            <circle class="pa-feat-node" cx="520" cy="50" r="3">
+              <animate attributeName="r" values="2.5;4.5;2.5" dur="1.8s" begin="0.6s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.55;1;0.55" dur="1.8s" begin="0.6s" repeatCount="indefinite"/>
+            </circle>
+            <circle class="pa-feat-halo" cx="545" cy="105" r="12"/>
+            <circle class="pa-feat-node" cx="545" cy="105" r="4">
+              <animate attributeName="r" values="3;5.5;3" dur="1.8s" begin="0.15s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.6;1;0.6" dur="1.8s" begin="0.15s" repeatCount="indefinite"/>
+            </circle>
+            <circle class="pa-feat-halo" cx="610" cy="140" r="10"/>
+            <circle class="pa-feat-node" cx="610" cy="140" r="3">
+              <animate attributeName="r" values="2.5;4.5;2.5" dur="1.8s" begin="0.9s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.55;1;0.55" dur="1.8s" begin="0.9s" repeatCount="indefinite"/>
+            </circle>
+            <circle class="pa-feat-halo" cx="660" cy="60" r="10"/>
+            <circle class="pa-feat-node" cx="660" cy="60" r="3">
+              <animate attributeName="r" values="2.5;4.5;2.5" dur="1.8s" begin="1.2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.55;1;0.55" dur="1.8s" begin="1.2s" repeatCount="indefinite"/>
+            </circle>
+            <circle class="pa-feat-halo" cx="700" cy="105" r="10"/>
+            <circle class="pa-feat-node" cx="700" cy="105" r="3">
+              <animate attributeName="r" values="2.5;4.5;2.5" dur="1.8s" begin="1.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.55;1;0.55" dur="1.8s" begin="1.5s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+
+          <!-- data particles flowing: video -> feature cluster -->
+          <circle class="pa-particle-a" r="3">
+            <animateMotion dur="2.4s" begin="0s" repeatCount="indefinite" path="M110,100 C220,80 330,68 440,65"/>
+          </circle>
+          <circle class="pa-particle-b" r="3">
+            <animateMotion dur="2.4s" begin="0.8s" repeatCount="indefinite" path="M110,100 C220,120 330,132 460,135"/>
+          </circle>
+          <circle class="pa-particle-c" r="3.4">
+            <animateMotion dur="2.2s" begin="1.5s" repeatCount="indefinite" path="M110,100 C250,100 380,105 545,105"/>
+          </circle>
+
+          <!-- data particles flowing: feature cluster -> results -->
+          <circle class="pa-particle-a" r="3">
+            <animateMotion dur="2.4s" begin="0.5s" repeatCount="indefinite" path="M660,60 C820,50 950,65 1090,100"/>
+          </circle>
+          <circle class="pa-particle-b" r="3">
+            <animateMotion dur="2.4s" begin="1.3s" repeatCount="indefinite" path="M700,105 C850,105 970,100 1090,100"/>
+          </circle>
+          <circle class="pa-particle-c" r="3.4">
+            <animateMotion dur="2.2s" begin="2.1s" repeatCount="indefinite" path="M610,140 C800,150 950,130 1090,100"/>
+          </circle>
+
+          <!-- video input node -->
+          <circle class="pa-ring pa-in" cx="110" cy="100" r="32"/>
+          <circle class="pa-node-core" cx="110" cy="100" r="32"/>
+          <polygon class="pa-icon" points="101,87 101,113 124,100"/>
+          <text class="pa-label-main" x="110" y="153" text-anchor="middle">VIDEO INPUT</text>
+          <text class="pa-label-sub" x="110" y="167" text-anchor="middle">Raw match footage</text>
+
+          <!-- feature extraction caption -->
+          <text class="pa-label-main" x="580" y="200" text-anchor="middle">FEATURE EXTRACTION</text>
+          <text class="pa-label-sub" x="580" y="214" text-anchor="middle">Detection &middot; tracking &middot; jersey OCR &middot; possession clustering</text>
+
+          <!-- results node -->
+          <circle class="pa-ring pa-out" cx="1090" cy="100" r="32"/>
+          <circle class="pa-node-core" cx="1090" cy="100" r="32"/>
+          <path class="pa-check" d="M1077,100 1086,109 1103,90"/>
+          <text class="pa-label-main" x="1090" y="153" text-anchor="middle">RESULTS</text>
+          <text class="pa-label-sub" x="1090" y="167" text-anchor="middle">Tactics &middot; events &middot; report</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="jiq-grid">
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+
+        <div class="jiq-panel">
+          <div class="jiq-panel-head">
+            <h2><span class="bullet"></span>Annotated Feed</h2>
+            <span class="jiq-tag" id="videoTag">No output yet</span>
+          </div>
+          <div class="jiq-video" id="jiqVideo">
+            <div class="pitch-line pitch-halfway"></div>
+            <div class="pitch-line pitch-circle"></div>
+            <div class="pitch-line pitch-spot"></div>
+            <div class="video-empty-note" id="videoEmptyNote">Upload or select a video above — the annotated output (real detections, IDs and jersey numbers baked in by the backend) will play here once processing finishes.</div>
+            <div class="video-preview" id="videoPreviewContainer"></div>
+
+            <div class="proc-overlay" id="videoProcessingOverlay">
+              <div class="proc-grid-glow"></div>
+              <div class="proc-scanline"></div>
+              <div class="proc-corner tl"></div>
+              <div class="proc-corner tr"></div>
+              <div class="proc-corner bl"></div>
+              <div class="proc-corner br"></div>
+              <div class="proc-ring-wrap">
+                <svg viewBox="0 0 110 110">
+                  <circle class="proc-ring-track" cx="55" cy="55" r="50"></circle>
+                  <circle class="proc-ring-fill" id="procRingFill" cx="55" cy="55" r="50"></circle>
+                </svg>
+                <div class="proc-ring-center">
+                  <div class="proc-ring-pct" id="procPercent">0%</div>
+                  <div class="proc-ring-label">Analyzing</div>
+                </div>
+              </div>
+              <div class="proc-caption">
+                <div class="msg" id="procMessage">Starting pipeline…</div>
+                <div class="sub"><span class="blink"></span><span id="procStageLabel">Stage 1 / 3 — Ingest</span></div>
+              </div>
+              <div class="proc-dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="jiq-panel">
+          <div class="jiq-panel-head">
+            <h2><span class="bullet"></span>Live Feed</h2>
+            <div class="feed-tabs" id="feedTabs">
+              <button class="feed-tab active" data-feed-tab="commentary">Commentary</button>
+              <button class="feed-tab" data-feed-tab="events">Event Log</button>
+            </div>
+          </div>
+          <div class="feed-panel-content active" id="feedTabCommentary">
+            <div class="feed" id="commentaryFeed"><div class="feed-empty">No processed clip yet.</div></div>
+          </div>
+          <div class="feed-panel-content" id="feedTabEvents">
+            <div class="feed" id="eventFeed"><div class="feed-empty">No processed clip yet.</div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="jiq-side">
+
+        <div class="jiq-panel">
+          <div class="jiq-panel-head">
+            <h2><span class="bullet"></span>Pipeline — Distributed 3&#8209;Tier Flow</h2>
+            <span class="jiq-tag" id="stageClock">Idle</span>
+          </div>
+          <div class="jiq-pipeline">
+            <div class="pipeline-row" id="pipelineRow">
+              <div class="stage" data-stage="0">
+                <div class="stage-top">
+                  <span class="stage-name">Ingest</span>
+                  <span class="stage-num"><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>01</span>
+                </div>
+                <div class="stage-chips">
+                  <span class="chip">Frame Sampling</span>
+                  <span class="chip">Detection (player/ball)</span>
+                  <span class="chip">Tracking</span>
+                </div>
+                <div class="stage-hw"><span class="hdot"></span>detection_best.pt</div>
+              </div>
+              <div class="stage-connector"><span class="flow-dot"></span><span class="flow-dot"></span><span class="flow-dot"></span></div>
+              <div class="stage" data-stage="1">
+                <div class="stage-top">
+                  <span class="stage-name">Process</span>
+                  <span class="stage-num"><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>02</span>
+                </div>
+                <div class="stage-chips">
+                  <span class="chip">Jersey OCR</span>
+                  <span class="chip">C-CNN Possession</span>
+                  <span class="chip">Team Color Cluster</span>
+                </div>
+                <div class="stage-hw"><span class="hdot"></span>jersey_ocr_best.pt · ccnn_best.pt</div>
+              </div>
+              <div class="stage-connector"><span class="flow-dot"></span><span class="flow-dot"></span><span class="flow-dot"></span></div>
+              <div class="stage" data-stage="2">
+                <div class="stage-top">
+                  <span class="stage-name">Synthesize</span>
+                  <span class="stage-num"><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>03</span>
+                </div>
+                <div class="stage-chips">
+                  <span class="chip">Event Log</span>
+                  <span class="chip">Tactics Transformer</span>
+                  <span class="chip">Video Export</span>
+                </div>
+                <div class="stage-hw"><span class="hdot"></span>tactics_best.pt</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="jiq-panel">
+      <div class="jiq-panel-head">
+        <h2><span class="bullet"></span>Match Metrics</h2>
+        <span class="jiq-tag">Computed from actual model inference</span>
+      </div>
+      <div class="metrics-panel-body" id="kpiStrip">
+
+        <div class="metrics-featured">
+          <div class="metric-feature-card">
+            <div class="metric-feature-top">
+              <span class="metric-feature-label">Possession</span>
+              <span class="kpi-value" id="kpiPossession" style="font-size:15px;">–</span>
+            </div>
+            <div class="possession-bar"><div class="seg-a" id="possessionBarA"></div><div class="seg-b" id="possessionBarB"></div></div>
+            <div class="possession-legend">
+              <span class="team-a"><span class="swatch"></span>Team A</span>
+              <span id="kpiPossessionSub" style="color:var(--text-faint);">&nbsp;</span>
+              <span class="team-b"><span class="swatch"></span>Team B</span>
+            </div>
+          </div>
+          <div class="metric-feature-card">
+            <div class="metric-feature-top">
+              <span class="metric-feature-label"><svg style="width:12px;height:12px;vertical-align:-2px;margin-right:5px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/><circle cx="17" cy="7" r="3"/></svg>Players Tracked</span>
+            </div>
+            <div class="metric-players-value" id="kpiPlayers">–</div>
+            <div class="kpi-sub" id="kpiPlayersSub" style="margin-top:8px;">Awaiting clip</div>
+          </div>
+        </div>
+
+        <div class="metrics-secondary">
+          <div class="kpi">
+            <div class="kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/></svg>Touches Detected</div>
+            <div class="kpi-value" id="kpiTouches">–</div><div class="kpi-sub" id="kpiTouchesSub">&nbsp;</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h11M11 7l4 5-4 5"/></svg>Passes Completed</div>
+            <div class="kpi-value" id="kpiPasses">–</div><div class="kpi-sub" id="kpiPassesSub">&nbsp;</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>Avg ID Confidence</div>
+            <div class="kpi-value" id="kpiConf">–</div><div class="kpi-sub" id="kpiConfSub">&nbsp;</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>Processing Rate</div>
+            <div class="kpi-value" id="kpiFps">–</div><div class="kpi-sub" id="kpiFpsSub">&nbsp;</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="jiq-footer-note">Every number above is computed by the Flask backend from actual model inference on your video — nothing here is simulated.</div>
+
+    <div class="jiq-panel" id="tacticsPanel">
+      <div class="jiq-panel-head">
+        <h2><span class="bullet" style="background:var(--coral); box-shadow:0 0 6px rgba(240,120,92,0.6);"></span>Tactical Coach Report</h2>
+        <span class="jiq-tag">Gemini 2.5 Flash · both teams, equal depth</span>
+      </div>
+      <div class="tactics-toolbar">
+        <button id="tacticsButton" disabled>Generate Tactical Report</button>
+        <span id="tacticsStatus" style="font-size:12.5px; color:var(--text-dim);">Process a video first.</span>
+      </div>
+      <div class="tactics-progress-wrap"><div class="progress-track"><div class="progress-fill" id="tacticsProgressFill">0%</div></div></div>
+      <div id="tacticsReport" style="display:none;">
+        <div style="display:flex; justify-content:flex-end; margin:0 18px 12px;">
+          <a id="tacticsDownloadMd" href="#" download="coach_report.md" style="font-size:12px; color:var(--cyan); font-family:var(--font-mono);">↓ Download Markdown report</a>
+        </div>
+        <div id="tacticsBody" class="tactics-body"></div>
+        <div id="tacticsVisualizations" class="tactics-viz-section" style="display:none;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  // The Flask backend (app.py) almost never runs on the same origin/port as
+  // this static HTML file, so we do NOT default to window.location.origin.
+  // Instead the backend URL is explicit and user-editable (persisted locally).
+  let apiHost = window.localStorage ? (localStorage.getItem('jiq_api_host') || 'http://127.0.0.1:5000')
+                                     : 'http://127.0.0.1:5000';
+
+  const el = (id) => document.getElementById(id);
+  const apiHostInput = el('apiHostInput');
+  const apiHostSave = el('apiHostSave');
+  if (apiHostInput) apiHostInput.value = apiHost;
+  if (apiHostSave) {
+    apiHostSave.addEventListener('click', () => {
+      apiHost = apiHostInput.value.trim().replace(/\/$/, '');
+      try { localStorage.setItem('jiq_api_host', apiHost); } catch(e) {}
+    });
+  }
+  const uploadButton = el('uploadButton');
+  const videoUpload = el('videoUpload');
+  const uploadStatus = el('uploadStatus');
+  const uploadProgressFill = el('uploadProgressFill');
+  const videoPreview = el('videoPreviewContainer');
+  const videoEmptyNote = el('videoEmptyNote');
+  const clipChip = el('clipChip');
+  const statusChip = el('statusChip');
+  const statusChipText = el('statusChipText');
+  const stageClock = el('stageClock');
+  const videoTag = el('videoTag');
+  const commentaryFeed = el('commentaryFeed');
+  const eventFeed = el('eventFeed');
+  const stages = document.querySelectorAll('.stage');
+  const pipelineRow = el('pipelineRow');
+  const jiqVideo = el('jiqVideo');
+  const videoProcessingOverlay = el('videoProcessingOverlay');
+  const procRingFill = el('procRingFill');
+  const procPercent = el('procPercent');
+  const procMessage = el('procMessage');
+  const procStageLabel = el('procStageLabel');
+  const kpiStrip = el('kpiStrip');
+  const possessionBarA = el('possessionBarA');
+  const possessionBarB = el('possessionBarB');
+
+  const RING_CIRCUMFERENCE = 314; // 2 * PI * r(50), matches stroke-dasharray in CSS
+
+  function showProcessingOverlay(){
+    if (videoProcessingOverlay) videoProcessingOverlay.classList.add('is-active');
+    if (pipelineRow) pipelineRow.classList.add('is-processing');
+    if (jiqVideo) jiqVideo.classList.add('is-processing');
+    if (kpiStrip) kpiStrip.classList.add('is-loading');
+    if (videoEmptyNote) videoEmptyNote.style.display = 'none';
+  }
+
+  function hideProcessingOverlay(){
+    if (videoProcessingOverlay) videoProcessingOverlay.classList.remove('is-active');
+    if (pipelineRow) pipelineRow.classList.remove('is-processing');
+    if (jiqVideo) jiqVideo.classList.remove('is-processing');
+    if (kpiStrip) kpiStrip.classList.remove('is-loading');
+  }
+
+  const tacticsButton = el('tacticsButton');
+  const tacticsStatus = el('tacticsStatus');
+  const tacticsProgressFill = el('tacticsProgressFill');
+  const tacticsReport = el('tacticsReport');
+  const tacticsBody = el('tacticsBody');
+  const tacticsDownloadMd = el('tacticsDownloadMd');
+  const tacticsVisualizations = el('tacticsVisualizations');
+
+  let activePoller = null;
+  let currentFilename = null;
+  let tacticsPoller = null;
+
+  function setStatus(mode, text){
+    statusChip.className = 'jiq-status-chip' + (mode ? ' ' + mode : '');
+    statusChipText.textContent = text;
+  }
+
+  function setStageFromPercent(pct){
+    let idx = 0;
+    if (pct >= 66) idx = 2; else if (pct >= 33) idx = 1; else idx = 0;
+    stages.forEach((s, i) => {
+      s.classList.remove('active', 'complete');
+      if (i < idx) s.classList.add('complete');
+      if (i === idx && pct < 100) s.classList.add('active');
+      if (pct >= 100) s.classList.add('complete');
+    });
+    stageClock.textContent = pct >= 100 ? 'Complete' : `Stage ${idx + 1} / 3`;
+    if (procStageLabel) {
+      const names = ['Ingest', 'Process', 'Synthesize'];
+      procStageLabel.textContent = pct >= 100 ? 'Finalizing output' : `Stage ${idx + 1} / 3 — ${names[idx]}`;
+    }
+  }
+
+  function setProgress(fillEl, percent, label, statusEl){
+    const clamped = Math.min(100, Math.max(0, percent));
+    fillEl.style.width = `${clamped}%`;
+    fillEl.textContent = `${clamped}%`;
+    if (label && statusEl) statusEl.textContent = label;
+    setStageFromPercent(clamped);
+    // Keep the video processing overlay (ring + caption) in sync with real backend progress.
+    if (procRingFill) {
+      const offset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * clamped / 100);
+      procRingFill.style.strokeDashoffset = String(offset);
+    }
+    if (procPercent) procPercent.textContent = `${Math.round(clamped)}%`;
+    if (procMessage && label) procMessage.textContent = label;
+  }
+
+  function stopPolling(){
+    if (activePoller) { clearInterval(activePoller); activePoller = null; }
+  }
+
+  async function pollProgress(filename, fillEl, statusEl){
+    try {
+      const res = await fetch(`${apiHost}/progress/${encodeURIComponent(filename)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setProgress(fillEl, data.percent || 0, data.message ? `${data.message}` : null, statusEl);
+      if (data.done) {
+        stopPolling();
+        if (data.error) {
+          setStatus('', 'Idle');
+          statusEl.textContent = `Error: ${data.error}`;
+          hideProcessingOverlay();
+          if (videoEmptyNote) videoEmptyNote.style.display = '';
+          return;
+        }
+        await fetchResult(filename, statusEl);
+        hideProcessingOverlay();
+      }
+    } catch (err) {
+      console.error('progress poll failed', err);
+    }
+  }
+
+  function startPolling(filename, fillEl, statusEl){
+    stopPolling();
+    setStatus('busy', 'Processing');
+    clipChip.textContent = filename;
+    showProcessingOverlay();
+    setProgress(fillEl, 0, 'Starting...', statusEl);
+    activePoller = setInterval(() => pollProgress(filename, fillEl, statusEl), 1500);
+    pollProgress(filename, fillEl, statusEl);
+  }
+
+  const feedTabButtons = document.querySelectorAll('.feed-tab');
+  feedTabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      feedTabButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.feed-panel-content').forEach(p => p.classList.remove('active'));
+      const target = btn.dataset.feedTab === 'events' ? el('feedTabEvents') : el('feedTabCommentary');
+      if (target) target.classList.add('active');
+    });
+  });
+
+  function renderEmpty(feedEl){
+    feedEl.innerHTML = '<div class="feed-empty">No events in this clip.</div>';
+  }
+
+  function renderCommentary(items){
+    commentaryFeed.innerHTML = '';
+    if (!items || items.length === 0) { renderEmpty(commentaryFeed); return; }
+    items.slice().reverse().forEach(item => {
+      const wrap = document.createElement('div');
+      wrap.className = 'commentary-item' + (item.tag === 'shot' ? ' shot' : item.tag === 'flag' ? ' flag' : '');
+      const icon = item.tag === 'shot' ? '\u26bd' : item.tag === 'flag' ? '\u26a0\ufe0f' : '\ud83e\udd16';
+      wrap.innerHTML = `<div class="c-avatar">${icon}</div><div class="c-body"><p>${item.text}</p><div class="c-meta">${item.t.toFixed(1)}s</div></div>`;
+      commentaryFeed.appendChild(wrap);
+    });
+  }
+
+  function renderEvents(events){
+    eventFeed.innerHTML = '';
+    if (!events || events.length === 0) { renderEmpty(eventFeed); return; }
+    events.slice().reverse().slice(0, 60).forEach(e => {
+      const wrap = document.createElement('div');
+      wrap.className = 'log-item';
+      wrap.innerHTML = `<span class="log-t">${e.t.toFixed(1)}s</span><span class="log-ev ev-${e.ev}">${e.ev}</span><span>${e.detail}</span>`;
+      eventFeed.appendChild(wrap);
+    });
+  }
+
+  function renderKpis(k){
+    el('kpiPlayers').textContent = k.players_tracked;
+    el('kpiPlayersSub').textContent = 'from real detections';
+    el('kpiTouches').textContent = k.touches;
+    el('kpiTouchesSub').textContent = `${k.flagged} flagged for review`;
+    el('kpiPasses').textContent = k.passes;
+    el('kpiPassesSub').textContent = `${k.shots} shot(s) detected`;
+    el('kpiPossession').innerHTML = `${k.possession_a}<span>/${k.possession_b}</span>`;
+    el('kpiPossessionSub').textContent = 'Team A / Team B (touch-time based)';
+    try {
+      const pa = parseFloat(k.possession_a);
+      const pb = parseFloat(k.possession_b);
+      if (!isNaN(pa) && !isNaN(pb) && (pa + pb) > 0) {
+        const total = pa + pb;
+        if (possessionBarA) possessionBarA.style.width = `${(pa / total * 100).toFixed(1)}%`;
+        if (possessionBarB) possessionBarB.style.width = `${(pb / total * 100).toFixed(1)}%`;
+      }
+    } catch (e) { /* leave the default 50/50 bar if values are non-numeric */ }
+    el('kpiConf').innerHTML = `${k.avg_ocr_confidence}<span>%</span>`;
+    el('kpiConfSub').textContent = 'avg jersey OCR confidence';
+    el('kpiFps').innerHTML = `${k.processing_fps}<span>fps</span>`;
+    el('kpiFpsSub').textContent = 'measured this run';
+  }
+
+  async function fetchResult(filename, statusEl){
+    try {
+      const res = await fetch(`${apiHost}/result/${encodeURIComponent(filename)}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        statusEl.textContent = data.error || 'Processing failed.';
+        setStatus('', 'Idle');
+        hideProcessingOverlay();
+        if (videoEmptyNote) videoEmptyNote.style.display = '';
+        return;
+      }
+      setStatus('ready', 'Ready');
+      videoTag.textContent = `${data.result.fps_source} fps source · ${data.result.duration_sec}s`;
+      videoEmptyNote.style.display = 'none';
+      videoPreview.innerHTML = `<video controls autoplay muted src="${apiHost}${data.annotated_url}"></video>`;
+      renderCommentary(data.result.commentary);
+      renderEvents(data.result.events);
+      renderKpis(data.result.kpis);
+      statusEl.innerHTML = `Processed <b>${filename}</b> successfully. <a href="${apiHost}${data.annotated_url}" target="_blank">Open annotated video</a>`;
+
+      currentFilename = filename;
+      tacticsButton.disabled = false;
+      tacticsStatus.textContent = 'Ready to generate the tactical coach report.';
+      tacticsReport.style.display = 'none';
+      tacticsBody.innerHTML = '';
+      tacticsVisualizations.style.display = 'none';
+      tacticsVisualizations.innerHTML = '';
+      tacticsProgressFill.style.width = '0%';
+      tacticsProgressFill.textContent = '0%';
+    } catch (err) {
+      statusEl.textContent = 'Could not retrieve results due to a network error.';
+      setStatus('', 'Idle');
+      hideProcessingOverlay();
+      if (videoEmptyNote) videoEmptyNote.style.display = '';
+      console.error(err);
+    }
+  }
+
+  const dropZone = el('dropZone');
+  const fileDetailsCard = el('fileDetailsCard');
+  const dropZoneCta = el('dropZoneCta');
+  const fileNameText = el('fileNameText');
+  const fileSizeText = el('fileSizeText');
+  const fileFormatText = el('fileFormatText');
+  const btnRemoveFile = el('btnRemoveFile');
+
+  function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  function updateSelectedFileDisplay(file) {
+    if (file) {
+      fileNameText.textContent = file.name;
+      fileSizeText.textContent = formatBytes(file.size);
+      const ext = file.name.split('.').pop().toUpperCase();
+      fileFormatText.textContent = ext.length <= 4 ? ext : 'VID';
+      dropZoneCta.style.display = 'none';
+      fileDetailsCard.style.display = 'flex';
+      uploadStatus.textContent = `Selected "${file.name}" (${formatBytes(file.size)}). Click "Start HALO Analysis" to begin.`;
+    } else {
+      videoUpload.value = '';
+      dropZoneCta.style.display = 'flex';
+      fileDetailsCard.style.display = 'none';
+      uploadStatus.textContent = 'Select or drop a video file above to begin.';
+    }
+  }
+
+  if (dropZone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('is-dragover');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('is-dragover');
+      }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        videoUpload.files = files;
+        updateSelectedFileDisplay(files[0]);
+      }
+    });
+  }
+
+  if (videoUpload) {
+    videoUpload.addEventListener('change', () => {
+      const file = videoUpload.files[0];
+      updateSelectedFileDisplay(file);
+    });
+  }
+
+  if (btnRemoveFile) {
+    btnRemoveFile.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      updateSelectedFileDisplay(null);
+    });
+  }
+
+  uploadButton.addEventListener('click', async () => {
+    const file = videoUpload.files[0];
+    if (!file) { uploadStatus.textContent = 'Please select or drop a video file first.'; return; }
+    uploadButton.disabled = true;
+    uploadStatus.textContent = 'Uploading footage to server...';
+    const formData = new FormData();
+    formData.append('video', file);
+    try {
+      const res = await fetch(`${apiHost}/upload`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        uploadStatus.textContent = data.error || 'Upload failed.';
+        uploadButton.disabled = false;
+        return;
+      }
+      startPolling(data.filename, uploadProgressFill, uploadStatus);
+    } catch (err) {
+      uploadStatus.textContent = 'Upload failed due to a network or server error.';
+      console.error(err);
+    } finally {
+      uploadButton.disabled = false;
+    }
+  });
+
+  function _bulletsHtml(items){
+    if (!items || items.length === 0) return '<ul><li><em>None noted.</em></li></ul>';
+    return '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>';
+  }
+
+  function _teamCardHtml(label, team){
+    if (!team) team = {};
+    return `
+      <div class="tactics-team">
+        <h3>${label}</h3>
+        <p><b>Playing style:</b> ${team.playing_style || '—'}</p>
+        <h4>Offensive Strengths</h4>${_bulletsHtml(team.offensive_strengths)}
+        <h4>Offensive Weaknesses</h4>${_bulletsHtml(team.offensive_weaknesses)}
+        <h4>Defensive Strengths</h4>${_bulletsHtml(team.defensive_strengths)}
+        <h4>Defensive Weaknesses</h4>${_bulletsHtml(team.defensive_weaknesses)}
+        <p><b>Transition play:</b> ${team.transition_play || '—'}</p>
+        <h4>Notable Moments</h4>${_bulletsHtml(team.notable_moments)}
+      </div>`;
+  }
+
+  function renderTacticsReport(report, visualizations){
+    const overview = report.match_overview || {};
+    let html = `
+      <div class="tactics-block full-width">
+        <h3>Match Overview</h3>
+        <p>
+          Duration: <b>${overview.duration_seconds ?? '—'}s</b> ·
+          Possession: <b>${overview.possession_team_a ?? '—'} / ${overview.possession_team_b ?? '—'}</b> ·
+          Formation A: <b>${overview.estimated_formation_team_a ?? '—'}</b> ·
+          Formation B: <b>${overview.estimated_formation_team_b ?? '—'}</b> ·
+          Intensity: <b>${overview.overall_intensity ?? '—'}</b>
+        </p>
+      </div>
+      <div class="tactics-block full-width">
+        <h3>Match Summary</h3>
+        <p>${report.match_summary || '—'}</p>
+      </div>
+      ${_teamCardHtml('Team A Analysis', report.team_a_analysis)}
+      ${_teamCardHtml('Team B Analysis', report.team_b_analysis)}
+      <div class="tactics-block full-width">
+        <h3>Key Match Moments</h3>
+        ${(report.key_match_moments || []).map(m =>
+          `<div class="tactics-moment"><b>${m.time_seconds ?? '?'}s (Team ${m.team ?? '?'}):</b> ${m.description || ''}</div>`
+        ).join('') || '<p><em>None noted.</em></p>'}
+      </div>
+      <div class="tactics-block full-width">
+        <h3>Player Observations</h3>
+        ${(report.player_observations || []).map(p =>
+          `<div class="tactics-moment"><b>${p.reference || '?'} (Team ${p.team ?? '?'}):</b> ${p.observation || ''}</div>`
+        ).join('') || '<p><em>None noted.</em></p>'}
+      </div>
+      <div class="tactics-block full-width">
+        <h3>Final Verdict</h3>
+        <p><b>Team A:</b> ${report.final_verdict?.team_a_summary || '—'}</p>
+        <p><b>Team B:</b> ${report.final_verdict?.team_b_summary || '—'}</p>
+        <p><b>Overall narrative:</b> ${report.final_verdict?.overall_match_narrative || '—'}</p>
+      </div>
+    `;
+    tacticsBody.innerHTML = html;
+    
+    // Render visualizations
+    if (visualizations && Object.keys(visualizations).length > 0) {
+      const getUrl = (path) => {
+        if (!path) return '';
+        if (path.startsWith('/outputs')) {
+          return `${apiHost}${path}`;
+        }
+        return path;
+      };
+      
+      let vizHtml = `
+        <h3>Tactical Visualizations (mplsoccer)</h3>
+        <div class="tactics-viz-tabs">
+          <div class="tactics-viz-tab active" onclick="switchTacticsVizTab(this, 'overview')">Overview</div>
+          <div class="tactics-viz-tab" onclick="switchTacticsVizTab(this, 'simulations')">Tactical Simulations (Animations)</div>
+          <div class="tactics-viz-tab" onclick="switchTacticsVizTab(this, 'comparison')">Head to Head</div>
+        </div>
+        
+        <div id="viz-tab-overview" class="tactics-viz-content active">
+          <div class="tactics-viz-grid">
+            <div class="tactics-viz-card">
+              <h4>Formation Comparison</h4>
+              <img src="${getUrl(visualizations.formation_comparison)}" alt="Formation Comparison">
+            </div>
+            <div class="tactics-viz-card">
+              <h4>Tactical Comparison Map</h4>
+              <img src="${getUrl(visualizations.tactical_comparison)}" alt="Tactical Comparison Map">
+            </div>
+          </div>
+        </div>
+        
+        <div id="viz-tab-simulations" class="tactics-viz-content">
+          <div class="tactics-viz-grid">
+            <div class="tactics-viz-card">
+              <h4>Team A Attacking Simulation</h4>
+              <img src="${getUrl(visualizations.team_a?.attacking_animation)}" alt="Team A Attacking">
+            </div>
+            <div class="tactics-viz-card">
+              <h4>Team B Attacking Simulation</h4>
+              <img src="${getUrl(visualizations.team_b?.attacking_animation)}" alt="Team B Attacking">
+            </div>
+            <div class="tactics-viz-card">
+              <h4>Team A Defensive Simulation</h4>
+              <img src="${getUrl(visualizations.team_a?.defensive_animation)}" alt="Team A Defending">
+            </div>
+            <div class="tactics-viz-card">
+              <h4>Team B Defensive Simulation</h4>
+              <img src="${getUrl(visualizations.team_b?.defensive_animation)}" alt="Team B Defending">
+            </div>
+          </div>
+        </div>
+        
+        <div id="viz-tab-comparison" class="tactics-viz-content">
+          <div class="tactics-viz-card" style="max-width: 800px; margin: 0 auto;">
+            <h4>Head-to-Head Statistics & Aspects</h4>
+            <img src="${getUrl(visualizations.head_to_head)}" alt="Head to Head Comparison">
+          </div>
+        </div>
+      `;
+      tacticsVisualizations.innerHTML = vizHtml;
+      tacticsVisualizations.style.display = 'block';
+    } else {
+      tacticsVisualizations.style.display = 'none';
+      tacticsVisualizations.innerHTML = '';
+    }
+    
+    tacticsReport.style.display = 'block';
+  }
+
+  window.switchTacticsVizTab = function(btn, tabId) {
+    const tabs = btn.parentNode.querySelectorAll('.tactics-viz-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    
+    const contents = btn.parentNode.parentNode.querySelectorAll('.tactics-viz-content');
+    contents.forEach(c => c.classList.remove('active'));
+    
+    const activeContent = document.getElementById(`viz-tab-${tabId}`);
+    if (activeContent) activeContent.classList.add('active');
+  };
+
+  function stopTacticsPolling(){
+    if (tacticsPoller) { clearInterval(tacticsPoller); tacticsPoller = null; }
+  }
+
+  async function fetchTacticsResult(filename){
+    try {
+      const res = await fetch(`${apiHost}/tactics/result/${encodeURIComponent(filename)}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        tacticsStatus.textContent = data.error || 'Tactical report not ready yet.';
+        return;
+      }
+      renderTacticsReport(data.report, data.visualizations);
+      const blob = new Blob([data.markdown || ''], { type: 'text/markdown' });
+      tacticsDownloadMd.href = URL.createObjectURL(blob);
+      tacticsDownloadMd.download = `${filename}_coach_report.md`;
+      tacticsStatus.textContent = 'Tactical report ready.';
+    } catch (err) {
+      tacticsStatus.textContent = 'Could not retrieve the tactical report due to a network error.';
+      console.error(err);
+    }
+  }
+
+  function startTacticsPolling(filename){
+    stopTacticsPolling();
+    tacticsPoller = setInterval(async () => {
+      try {
+        const res = await fetch(`${apiHost}/tactics/progress/${encodeURIComponent(filename)}`);
+        const data = await res.json();
+        tacticsProgressFill.style.width = `${data.percent}%`;
+        tacticsProgressFill.textContent = `${data.percent}%`;
+        tacticsStatus.textContent = data.message || '';
+        if (data.error) {
+          stopTacticsPolling();
+          tacticsStatus.textContent = data.error;
+          tacticsButton.disabled = false;
+        } else if (data.done) {
+          stopTacticsPolling();
+          await fetchTacticsResult(filename);
+          tacticsButton.disabled = false;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }, 1500);
+  }
+
+  tacticsButton.addEventListener('click', async () => {
+    if (!currentFilename) return;
+    tacticsButton.disabled = true;
+    tacticsReport.style.display = 'none';
+    tacticsStatus.textContent = 'Starting tactical analysis...';
+    try {
+      const res = await fetch(`${apiHost}/tactics/${encodeURIComponent(currentFilename)}`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        tacticsStatus.textContent = data.error || 'Failed to start tactical analysis.';
+        tacticsButton.disabled = false;
+        return;
+      }
+      startTacticsPolling(currentFilename);
+    } catch (err) {
+      tacticsStatus.textContent = 'Failed to start tactical analysis due to a network error.';
+      tacticsButton.disabled = false;
+      console.error(err);
+    }
+  });
+
+  setStageFromPercent(0);
+})();
+</script>
+</body>
+</html>

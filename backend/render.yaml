@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: halo-backend
+    env: python
+    plan: standard  # YOLO + torch need more than the free tier's RAM
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 1 --threads 4 --timeout 600 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false   # set manually in the Render dashboard, never commit it
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: PYTHON_VERSION
+        value: 3.11.9
+    disk:
+      name: halo-models
+      mountPath: /opt/render/project/src/models
+      sizeGB: 5

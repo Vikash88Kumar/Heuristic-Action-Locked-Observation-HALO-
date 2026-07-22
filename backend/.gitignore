@@ -1,0 +1,20 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Large model weights -- ship these separately (Git LFS, cloud storage,
+# or the host's persistent disk), don't commit them to git.
+models/*.pt
+
+# Runtime data
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
+inputs/*.mp4
+inputs/*.mov
+inputs/*.avi
+inputs/*.mkv
+!inputs/.gitkeep

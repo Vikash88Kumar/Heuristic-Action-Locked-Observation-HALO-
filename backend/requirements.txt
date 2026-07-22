@@ -1,0 +1,27 @@
+# Core web backend
+flask>=3.0,<4.0
+gunicorn>=21.2
+
+# Computer vision / video IO
+opencv-python-headless>=4.8
+
+# Detection + tracking (loads models/detection_best.pt, includes BoT-SORT tracker)
+ultralytics>=8.1
+
+# Deep learning runtime (loads jersey_ocr_best.pt and ccnn_best.pt)
+# If you have an NVIDIA GPU, install the CUDA build from https://pytorch.org/get-started/locally/
+# instead of the line below for much faster processing.
+torch>=2.1
+
+numpy>=1.24
+
+# Tactics module (coach-style analysis via Gemini)
+google-genai>=0.3.0
+python-dotenv>=1.0.0
+
+# Visualization features
+mplsoccer>=1.6.0
+matplotlib>=3.5.0
+scipy
+Pillow
+
