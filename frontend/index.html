@@ -1731,7 +1731,7 @@
 
   async function fetchTacticsResult(filename){
     try {
-      const res = await fetch(`${apiHost}/tactics/result/${encodeURIComponent(filename)}`);
+      const res = await fetch(`${getApiHost()}/tactics/result/${encodeURIComponent(filename)}`);
       const data = await res.json();
       if (!res.ok || !data.success) {
         tacticsStatus.textContent = data.error || 'Tactical report not ready yet.';
@@ -1752,7 +1752,7 @@
     stopTacticsPolling();
     tacticsPoller = setInterval(async () => {
       try {
-        const res = await fetch(`${apiHost}/tactics/progress/${encodeURIComponent(filename)}`);
+        const res = await fetch(`${getApiHost()}/tactics/progress/${encodeURIComponent(filename)}`);
         const data = await res.json();
         tacticsProgressFill.style.width = `${data.percent}%`;
         tacticsProgressFill.textContent = `${data.percent}%`;
@@ -1778,7 +1778,7 @@
     tacticsReport.style.display = 'none';
     tacticsStatus.textContent = 'Starting tactical analysis...';
     try {
-      const res = await fetch(`${apiHost}/tactics/${encodeURIComponent(currentFilename)}`, { method: 'POST' });
+      const res = await fetch(`${getApiHost()}/tactics/${encodeURIComponent(currentFilename)}`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok || !data.success) {
         tacticsStatus.textContent = data.error || 'Failed to start tactical analysis.';
