@@ -1225,8 +1225,11 @@
   // The Flask backend (app.py) almost never runs on the same origin/port as
   // this static HTML file, so we do NOT default to window.location.origin.
   // Instead the backend URL is explicit and user-editable (persisted locally).
-  let apiHost = window.localStorage ? (localStorage.getItem('jiq_api_host') || 'http://127.0.0.1:5000')
-                                     : 'http://127.0.0.1:5000';
+  let currentOrigin = (window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http')) 
+                      ? window.location.origin 
+                      : 'http://127.0.0.1:5000';
+  let storedHost = window.localStorage ? localStorage.getItem('jiq_api_host') : null;
+  let apiHost = (storedHost && !storedHost.includes('127.0.0.1')) ? storedHost : currentOrigin;
 
   const el = (id) => document.getElementById(id);
   const apiHostInput = el('apiHostInput');
@@ -1236,6 +1239,7 @@
     apiHostSave.addEventListener('click', () => {
       apiHost = apiHostInput.value.trim().replace(/\/$/, '');
       try { localStorage.setItem('jiq_api_host', apiHost); } catch(e) {}
+      alert('Backend URL updated to: ' + apiHost);
     });
   }
   const uploadButton = el('uploadButton');
