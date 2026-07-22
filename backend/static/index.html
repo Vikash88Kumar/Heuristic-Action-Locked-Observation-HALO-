@@ -1222,24 +1222,31 @@
 
 <script>
 (function(){
-  // The Flask backend (app.py) almost never runs on the same origin/port as
-  // this static HTML file, so we do NOT default to window.location.origin.
-  // Instead the backend URL is explicit and user-editable (persisted locally).
-  let currentOrigin = (window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http')) 
-                      ? window.location.origin 
-                      : 'http://127.0.0.1:5000';
-  let storedHost = window.localStorage ? localStorage.getItem('jiq_api_host') : null;
-  let apiHost = (storedHost && !storedHost.includes('127.0.0.1')) ? storedHost : currentOrigin;
-
   const el = (id) => document.getElementById(id);
   const apiHostInput = el('apiHostInput');
   const apiHostSave = el('apiHostSave');
-  if (apiHostInput) apiHostInput.value = apiHost;
+
+  function getApiHost() {
+    if (apiHostInput && apiHostInput.value && apiHostInput.value.trim() !== '') {
+      return apiHostInput.value.trim().replace(/\/$/, '');
+    }
+    let stored = window.localStorage ? localStorage.getItem('jiq_api_host') : null;
+    if (stored && !stored.includes('127.0.0.1')) {
+      return stored.trim().replace(/\/$/, '');
+    }
+    if (window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http')) {
+      return window.location.origin.replace(/\/$/, '');
+    }
+    return 'http://127.0.0.1:5000';
+  }
+
+  if (apiHostInput) apiHostInput.value = getApiHost();
+
   if (apiHostSave) {
     apiHostSave.addEventListener('click', () => {
-      apiHost = apiHostInput.value.trim().replace(/\/$/, '');
-      try { localStorage.setItem('jiq_api_host', apiHost); } catch(e) {}
-      alert('Backend URL updated to: ' + apiHost);
+      let val = apiHostInput.value.trim().replace(/\/$/, '');
+      try { localStorage.setItem('jiq_api_host', val); } catch(e) {}
+      alert('Backend URL set to: ' + val);
     });
   }
   const uploadButton = el('uploadButton');
@@ -1338,7 +1345,7 @@
 
   async function pollProgress(filename, fillEl, statusEl){
     try {
-      const res = await fetch(`${apiHost}/progress/${encodeURIComponent(filename)}`);
+      const res = await fetch(`${getApiHost()}/progress/${encodeURIComponent(filename)}`);
       if (!res.ok) return;
       const data = await res.json();
       setProgress(fillEl, data.percent || 0, data.message ? `${data.message}` : null, statusEl);
@@ -1433,7 +1440,7 @@
 
   async function fetchResult(filename, statusEl){
     try {
-      const res = await fetch(`${apiHost}/result/${encodeURIComponent(filename)}`);
+      const res = await fetch(`${getApiHost()}/result/${encodeURIComponent(filename)}`);
       const data = await res.json();
       if (!res.ok || !data.success) {
         statusEl.textContent = data.error || 'Processing failed.';
@@ -1445,11 +1452,11 @@
       setStatus('ready', 'Ready');
       videoTag.textContent = `${data.result.fps_source} fps source · ${data.result.duration_sec}s`;
       videoEmptyNote.style.display = 'none';
-      videoPreview.innerHTML = `<video controls autoplay muted src="${apiHost}${data.annotated_url}"></video>`;
+      videoPreview.innerHTML = `<video controls autoplay muted src="${getApiHost()}${data.annotated_url}"></video>`;
       renderCommentary(data.result.commentary);
       renderEvents(data.result.events);
       renderKpis(data.result.kpis);
-      statusEl.innerHTML = `Processed <b>${filename}</b> successfully. <a href="${apiHost}${data.annotated_url}" target="_blank">Open annotated video</a>`;
+      statusEl.innerHTML = `Processed <b>${filename}</b> successfully. <a href="${getApiHost()}${data.annotated_url}" target="_blank">Open annotated video</a>`;
 
       currentFilename = filename;
       tacticsButton.disabled = false;
@@ -1552,7 +1559,7 @@
     const formData = new FormData();
     formData.append('video', file);
     try {
-      const res = await fetch(`${apiHost}/upload`, { method: 'POST', body: formData });
+      const res = await fetch(`${getApiHost()}/upload`, { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok || !data.success) {
         uploadStatus.textContent = data.error || 'Upload failed.';
