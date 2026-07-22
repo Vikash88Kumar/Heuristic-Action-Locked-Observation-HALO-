@@ -238,7 +238,8 @@ def result(filename):
 
 @app.route("/outputs/<path:filename>", methods=["GET"])
 def serve_output(filename):
-    return send_from_directory(OUTPUTS_DIR, filename)
+    mimetype = "video/mp4" if filename.lower().endswith(".mp4") else None
+    return send_from_directory(OUTPUTS_DIR, filename, mimetype=mimetype)
 
 
 # --------------------------------------------------------------------------
