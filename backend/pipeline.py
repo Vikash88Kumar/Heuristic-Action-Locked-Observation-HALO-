@@ -454,6 +454,8 @@ class VideoProcessor:
         fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        w = w if w % 2 == 0 else w - 1
+        h = h if h % 2 == 0 else h - 1
 
         import subprocess, shutil
         ffmpeg_exe = shutil.which("ffmpeg")
@@ -493,6 +495,9 @@ class VideoProcessor:
             ok, frame = cap.read()
             if not ok:
                 break
+            if frame.shape[1] != w or frame.shape[0] != h:
+                frame = cv2.resize(frame, (w, h))
+
             for tid, cx, cy, bw, bh in by_frame.get(f, []):
                 team = team_of_track.get(tid, 0)
                 color = TEAM_A_COLOR_BGR if team == 0 else TEAM_B_COLOR_BGR
@@ -529,8 +534,14 @@ class VideoProcessor:
         cap.release()
         if use_ffmpeg_pipe and proc:
             if proc.stdin:
-                proc.stdin.close()
+                try:
+                    proc.stdin.close()
+                except Exception:
+                    pass
+            stderr_log = proc.stderr.read().decode('utf-8', errors='ignore') if proc.stderr else ""
             proc.wait()
+            if proc.returncode != 0:
+                print(f"FFmpeg error (code {proc.returncode}): {stderr_log}", flush=True)
         elif writer:
             writer.release()
 
