@@ -1641,7 +1641,7 @@
       const getUrl = (path) => {
         if (!path) return '';
         if (path.startsWith('/outputs')) {
-          return `${apiHost}${path}`;
+          return `${getApiHost()}${path}`;
         }
         return path;
       };
