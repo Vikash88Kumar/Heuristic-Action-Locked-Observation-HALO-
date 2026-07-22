@@ -496,34 +496,26 @@ class VideoProcessor:
         # Convert the generated video to H.264 (avc1) using imageio-ffmpeg 
         # so it plays correctly in all modern web browsers.
         try:
-            with open("ffmpeg_trace.log", "a") as f_trace:
-                f_trace.write(f"Starting FFMPEG block for {output_path}\n")
-            import imageio_ffmpeg
             import subprocess
-            import time
-            time.sleep(1)  # Give Windows time to release the OpenCV file lock
-            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+            import shutil
+            ffmpeg_exe = shutil.which("ffmpeg")
+            if not ffmpeg_exe:
+                try:
+                    import imageio_ffmpeg
+                    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+                except Exception:
+                    ffmpeg_exe = "ffmpeg"
+
             temp_output = output_path + ".temp.mp4"
-            with open("ffmpeg_trace.log", "a") as f_trace:
-                f_trace.write(f"Replacing {output_path} with {temp_output}\n")
-            os.replace(output_path, temp_output)
-            with open("ffmpeg_trace.log", "a") as f_trace:
-                f_trace.write(f"Running FFMPEG on {temp_output}\n")
-            res = subprocess.run([
-                ffmpeg_exe, "-y", "-i", temp_output, 
-                "-vcodec", "libx264", "-pix_fmt", "yuv420p", output_path
-            ], capture_output=True, text=True)
-            with open("ffmpeg_trace.log", "a") as f_trace:
-                f_trace.write(f"FFMPEG finished with code {res.returncode}\n")
-                if res.returncode != 0:
-                    f_trace.write(f"FFMPEG stderr: {res.stderr}\n")
-            if os.path.exists(temp_output) and res.returncode == 0:
-                os.remove(temp_output)
+            if os.path.exists(output_path):
+                os.replace(output_path, temp_output)
+                res = subprocess.run([
+                    ffmpeg_exe, "-y", "-i", temp_output, 
+                    "-vcodec", "libx264", "-pix_fmt", "yuv420p", output_path
+                ], capture_output=True, text=True)
+                if os.path.exists(temp_output) and res.returncode == 0:
+                    os.remove(temp_output)
         except Exception as e:
-            import traceback
-            with open("ffmpeg_debug.log", "a") as f_debug:
-                f_debug.write(f"H.264 conversion skipped or failed: {e}\n")
-                f_debug.write(traceback.format_exc() + "\n")
             print(f"H.264 conversion skipped or failed: {e}", flush=True)
 
 

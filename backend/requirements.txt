@@ -24,4 +24,5 @@ mplsoccer>=1.6.0
 matplotlib>=3.5.0
 scipy
 Pillow
+imageio-ffmpeg>=0.4.9
 
