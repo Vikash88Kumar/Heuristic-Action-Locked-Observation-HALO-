@@ -836,7 +836,7 @@
         <span class="jiq-status-chip" id="statusChip"><span class="dot"></span><span id="statusChipText">Idle</span></span>
         <span class="jiq-pill jiq-backend">
           Backend
-          <input id="apiHostInput" type="text" value="http://127.0.0.1:5000" />
+          <input id="apiHostInput" type="text" value="" placeholder="http://127.0.0.1:5000" />
           <button id="apiHostSave" class="jiq-btn-ghost">Set</button>
         </span>
       </div>
@@ -1227,17 +1227,26 @@
   const apiHostSave = el('apiHostSave');
 
   function getApiHost() {
-    if (apiHostInput && apiHostInput.value && apiHostInput.value.trim() !== '') {
-      return apiHostInput.value.trim().replace(/\/$/, '');
-    }
+    let currentOrigin = (window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http')) 
+                        ? window.location.origin.replace(/\/$/, '')
+                        : 'http://127.0.0.1:5000';
+    let val = apiHostInput ? apiHostInput.value.trim().replace(/\/$/, '') : '';
     let stored = window.localStorage ? localStorage.getItem('jiq_api_host') : null;
-    if (stored && !stored.includes('127.0.0.1')) {
-      return stored.trim().replace(/\/$/, '');
+    if (stored) stored = stored.trim().replace(/\/$/, '');
+
+    if (val) {
+      if (val.includes('127.0.0.1') && !currentOrigin.includes('127.0.0.1')) {
+        return currentOrigin;
+      }
+      return val;
     }
-    if (window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http')) {
-      return window.location.origin.replace(/\/$/, '');
+    if (stored) {
+      if (stored.includes('127.0.0.1') && !currentOrigin.includes('127.0.0.1')) {
+        return currentOrigin;
+      }
+      return stored;
     }
-    return 'http://127.0.0.1:5000';
+    return currentOrigin;
   }
 
   if (apiHostInput) apiHostInput.value = getApiHost();
