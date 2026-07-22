@@ -454,10 +454,39 @@ class VideoProcessor:
         fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        # Use mp4v directly (cross-platform, requires no extra DLLs)
-        # We convert it to H.264 (libx264) via imageio-ffmpeg at the end of this function.
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+
+        import subprocess, shutil
+        ffmpeg_exe = shutil.which("ffmpeg")
+        if not ffmpeg_exe:
+            try:
+                import imageio_ffmpeg
+                ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+            except Exception:
+                ffmpeg_exe = "ffmpeg"
+
+        use_ffmpeg_pipe = True
+        proc = None
+        writer = None
+        try:
+            cmd = [
+                ffmpeg_exe, "-y",
+                "-f", "rawvideo",
+                "-vcodec", "rawvideo",
+                "-s", f"{w}x{h}",
+                "-pix_fmt", "bgr24",
+                "-r", str(fps),
+                "-i", "-",
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-preset", "ultrafast",
+                output_path
+            ]
+            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        except Exception as e:
+            print(f"FFmpeg pipe creation failed, falling back to cv2.VideoWriter: {e}", flush=True)
+            use_ffmpeg_pipe = False
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
 
         f = 0
         while True:
@@ -484,39 +513,26 @@ class VideoProcessor:
                 cv2.circle(frame, (bx, by), 12, (0, 165, 255), 2, cv2.LINE_AA)
                 cv2.circle(frame, (bx, by), 3, (0, 165, 255), -1, cv2.LINE_AA)
 
-            writer.write(frame)
+            if use_ffmpeg_pipe and proc and proc.stdin:
+                try:
+                    proc.stdin.write(frame.tobytes())
+                except Exception as e:
+                    print(f"Pipe write error on frame {f}: {e}", flush=True)
+            elif writer:
+                writer.write(frame)
+
             f += 1
             if total_frames and f % 20 == 0:
                 pct = 72 + int(27 * f / total_frames)
                 progress_cb(min(pct, 99), f"Synthesize: rendering frame {f}/{total_frames}")
 
         cap.release()
-        writer.release()
-
-        # Convert the generated video to H.264 (avc1) using imageio-ffmpeg 
-        # so it plays correctly in all modern web browsers.
-        try:
-            import subprocess
-            import shutil
-            ffmpeg_exe = shutil.which("ffmpeg")
-            if not ffmpeg_exe:
-                try:
-                    import imageio_ffmpeg
-                    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
-                except Exception:
-                    ffmpeg_exe = "ffmpeg"
-
-            temp_output = output_path + ".temp.mp4"
-            if os.path.exists(output_path):
-                os.replace(output_path, temp_output)
-                res = subprocess.run([
-                    ffmpeg_exe, "-y", "-i", temp_output, 
-                    "-vcodec", "libx264", "-pix_fmt", "yuv420p", output_path
-                ], capture_output=True, text=True)
-                if os.path.exists(temp_output) and res.returncode == 0:
-                    os.remove(temp_output)
-        except Exception as e:
-            print(f"H.264 conversion skipped or failed: {e}", flush=True)
+        if use_ffmpeg_pipe and proc:
+            if proc.stdin:
+                proc.stdin.close()
+            proc.wait()
+        elif writer:
+            writer.release()
 
 
 
