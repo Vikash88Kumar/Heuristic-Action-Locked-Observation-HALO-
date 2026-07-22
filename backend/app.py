@@ -238,6 +238,25 @@ def result(filename):
 
 @app.route("/outputs/<path:filename>", methods=["GET"])
 def serve_output(filename):
+    output_path = os.path.join(OUTPUTS_DIR, filename)
+    if filename.lower().endswith(".mp4") and os.path.isfile(output_path) and not filename.endswith(".h264.mp4"):
+        converted_name = filename + ".h264.mp4"
+        converted_path = os.path.join(OUTPUTS_DIR, converted_name)
+        if not os.path.isfile(converted_path):
+            try:
+                import subprocess, shutil
+                ffmpeg_exe = shutil.which("ffmpeg") or "ffmpeg"
+                res = subprocess.run([
+                    ffmpeg_exe, "-y", "-i", output_path,
+                    "-vcodec", "libx264", "-pix_fmt", "yuv420p", converted_path
+                ], capture_output=True, text=True, timeout=120)
+                if res.returncode == 0 and os.path.isfile(converted_path):
+                    return send_from_directory(OUTPUTS_DIR, converted_name, mimetype="video/mp4")
+            except Exception as e:
+                print(f"Auto-convert error for {filename}: {e}", flush=True)
+        else:
+            return send_from_directory(OUTPUTS_DIR, converted_name, mimetype="video/mp4")
+
     mimetype = "video/mp4" if filename.lower().endswith(".mp4") else None
     return send_from_directory(OUTPUTS_DIR, filename, mimetype=mimetype)
 
