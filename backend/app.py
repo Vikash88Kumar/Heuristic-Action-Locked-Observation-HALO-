@@ -246,7 +246,7 @@ def serve_output(filename):
     if filename.lower().endswith(".mp4") and not filename.endswith(".h264.mp4"):
         converted_name = filename + ".h264.mp4"
         converted_path = os.path.join(OUTPUTS_DIR, converted_name)
-        if os.path.isfile(converted_path):
+        if os.path.isfile(converted_path) and os.path.getsize(converted_path) > 1000:
             target_file = converted_name
 
     mimetype = "video/mp4" if target_file.lower().endswith(".mp4") else None

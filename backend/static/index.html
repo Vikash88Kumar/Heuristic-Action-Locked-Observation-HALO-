@@ -1457,15 +1457,7 @@
       videoPreview.innerHTML = `<video id="annotatedVideoPlayer" controls autoplay muted playsinline preload="auto" src="${videoUrl}"></video>`;
       const vPlayer = el('annotatedVideoPlayer');
       if (vPlayer) {
-        const startPlayback = () => {
-          if (vPlayer.currentTime === 0 && vPlayer.duration > 0.2) {
-            vPlayer.currentTime = 0.1;
-          }
-          vPlayer.play().catch(() => {});
-        };
-        vPlayer.addEventListener('loadedmetadata', startPlayback);
-        vPlayer.addEventListener('canplay', startPlayback);
-        startPlayback();
+        vPlayer.play().catch(() => {});
       }
       renderCommentary(data.result.commentary);
       renderEvents(data.result.events);
