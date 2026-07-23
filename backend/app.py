@@ -248,18 +248,6 @@ def serve_output(filename):
         converted_path = os.path.join(OUTPUTS_DIR, converted_name)
         if os.path.isfile(converted_path):
             target_file = converted_name
-        else:
-            try:
-                import subprocess, shutil
-                ffmpeg_exe = shutil.which("ffmpeg") or "ffmpeg"
-                res = subprocess.run([
-                    ffmpeg_exe, "-y", "-i", output_path,
-                    "-vcodec", "libx264", "-pix_fmt", "yuv420p", converted_path
-                ], capture_output=True, text=True, timeout=120)
-                if res.returncode == 0 and os.path.isfile(converted_path):
-                    target_file = converted_name
-            except Exception as e:
-                print(f"Auto-convert error for {filename}: {e}", flush=True)
 
     mimetype = "video/mp4" if target_file.lower().endswith(".mp4") else None
     response = send_from_directory(OUTPUTS_DIR, target_file, mimetype=mimetype, conditional=True)

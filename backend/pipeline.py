@@ -444,7 +444,6 @@ class VideoProcessor:
     def _render_annotated_video(self, video_path, output_path, track_positions,
                                  jersey_number_of_track, team_of_track, ball_positions,
                                  total_frames, progress_cb):
-        # invert track_positions into frame -> [(tid, cx, cy, bw, bh)]
         by_frame = {}
         for tid, pts in track_positions.items():
             for (f, cx, cy, bw, bh) in pts:
@@ -466,84 +465,115 @@ class VideoProcessor:
             except Exception:
                 ffmpeg_exe = "ffmpeg"
 
-        use_ffmpeg_pipe = True
-        proc = None
-        writer = None
-        try:
-            cmd = [
-                ffmpeg_exe, "-y",
-                "-f", "rawvideo",
-                "-vcodec", "rawvideo",
-                "-s", f"{w}x{h}",
-                "-pix_fmt", "bgr24",
-                "-r", str(fps),
-                "-i", "-",
-                "-c:v", "libx264",
-                "-pix_fmt", "yuv420p",
-                "-preset", "ultrafast",
-                output_path
-            ]
-            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        except Exception as e:
-            print(f"FFmpeg pipe creation failed, falling back to cv2.VideoWriter: {e}", flush=True)
-            use_ffmpeg_pipe = False
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            writer = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+        pipe_success = False
+        if ffmpeg_exe:
+            try:
+                cmd = [
+                    ffmpeg_exe, "-y",
+                    "-f", "rawvideo",
+                    "-vcodec", "rawvideo",
+                    "-s", f"{w}x{h}",
+                    "-pix_fmt", "bgr24",
+                    "-r", str(fps),
+                    "-i", "-",
+                    "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p",
+                    "-preset", "ultrafast",
+                    "-movflags", "+faststart",
+                    output_path
+                ]
+                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+                f = 0
+                while True:
+                    ok, frame = cap.read()
+                    if not ok:
+                        break
+                    if frame.shape[1] != w or frame.shape[0] != h:
+                        frame = cv2.resize(frame, (w, h))
 
-        f = 0
-        while True:
-            ok, frame = cap.read()
-            if not ok:
-                break
-            if frame.shape[1] != w or frame.shape[0] != h:
-                frame = cv2.resize(frame, (w, h))
+                    for tid, cx, cy, bw, bh in by_frame.get(f, []):
+                        team = team_of_track.get(tid, 0)
+                        color = TEAM_A_COLOR_BGR if team == 0 else TEAM_B_COLOR_BGR
+                        x1, y1 = int(cx - bw / 2), int(cy - bh / 2)
+                        x2, y2 = int(cx + bw / 2), int(cy + bh / 2)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                        info = jersey_number_of_track.get(tid)
+                        label = f"#{info['number']}" if info else f"id{tid}"
+                        cv2.putText(frame, label, (x1, max(0, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4, cv2.LINE_AA)
+                        cv2.putText(frame, label, (x1, max(0, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2, cv2.LINE_AA)
 
-            for tid, cx, cy, bw, bh in by_frame.get(f, []):
-                team = team_of_track.get(tid, 0)
-                color = TEAM_A_COLOR_BGR if team == 0 else TEAM_B_COLOR_BGR
-                x1, y1 = int(cx - bw / 2), int(cy - bh / 2)
-                x2, y2 = int(cx + bw / 2), int(cy + bh / 2)
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                info = jersey_number_of_track.get(tid)
-                label = f"#{info['number']}" if info else f"id{tid}"
-                # Dark outline for text readability
-                cv2.putText(frame, label, (x1, max(0, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4, cv2.LINE_AA)
-                cv2.putText(frame, label, (x1, max(0, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2, cv2.LINE_AA)
+                    ball = ball_positions.get(f)
+                    if ball is not None:
+                        bx, by = int(ball[0]), int(ball[1])
+                        cv2.circle(frame, (bx, by), 12, (0, 0, 0), 3, cv2.LINE_AA)
+                        cv2.circle(frame, (bx, by), 12, (0, 165, 255), 2, cv2.LINE_AA)
+                        cv2.circle(frame, (bx, by), 3, (0, 165, 255), -1, cv2.LINE_AA)
 
-            ball = ball_positions.get(f)
-            if ball is not None:
-                bx, by = int(ball[0]), int(ball[1])
-                # Clean, glowing ball target indicator instead of a tiny circle
-                cv2.circle(frame, (bx, by), 12, (0, 0, 0), 3, cv2.LINE_AA)
-                cv2.circle(frame, (bx, by), 12, (0, 165, 255), 2, cv2.LINE_AA)
-                cv2.circle(frame, (bx, by), 3, (0, 165, 255), -1, cv2.LINE_AA)
-
-            if use_ffmpeg_pipe and proc and proc.stdin:
-                try:
                     proc.stdin.write(frame.tobytes())
-                except Exception as e:
-                    print(f"Pipe write error on frame {f}: {e}", flush=True)
-            elif writer:
-                writer.write(frame)
+                    f += 1
+                    if total_frames and f % 20 == 0:
+                        pct = 72 + int(27 * f / total_frames)
+                        progress_cb(min(pct, 99), f"Synthesize: rendering frame {f}/{total_frames}")
 
-            f += 1
-            if total_frames and f % 20 == 0:
-                pct = 72 + int(27 * f / total_frames)
-                progress_cb(min(pct, 99), f"Synthesize: rendering frame {f}/{total_frames}")
+                proc.stdin.close()
+                proc.wait()
+                if proc.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                    pipe_success = True
+                else:
+                    stderr_log = proc.stderr.read().decode('utf-8', errors='ignore') if proc.stderr else ""
+                    print(f"FFmpeg pipe finished with code {proc.returncode}: {stderr_log}", flush=True)
+            except Exception as e:
+                print(f"FFmpeg pipe rendering failed: {e}", flush=True)
+
+        if not pipe_success:
+            print("Using OpenCV VideoWriter fallback + FFmpeg re-encode...", flush=True)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            temp_raw = output_path + ".raw.mp4"
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(temp_raw, fourcc, fps, (w, h))
+            f = 0
+            while True:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                if frame.shape[1] != w or frame.shape[0] != h:
+                    frame = cv2.resize(frame, (w, h))
+
+                for tid, cx, cy, bw, bh in by_frame.get(f, []):
+                    team = team_of_track.get(tid, 0)
+                    color = TEAM_A_COLOR_BGR if team == 0 else TEAM_B_COLOR_BGR
+                    x1, y1 = int(cx - bw / 2), int(cy - bh / 2)
+                    x2, y2 = int(cx + bw / 2), int(cy + bh / 2)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    info = jersey_number_of_track.get(tid)
+                    label = f"#{info['number']}" if info else f"id{tid}"
+                    cv2.putText(frame, label, (x1, max(0, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 4, cv2.LINE_AA)
+                    cv2.putText(frame, label, (x1, max(0, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2, cv2.LINE_AA)
+
+                ball = ball_positions.get(f)
+                if ball is not None:
+                    bx, by = int(ball[0]), int(ball[1])
+                    cv2.circle(frame, (bx, by), 12, (0, 0, 0), 3, cv2.LINE_AA)
+                    cv2.circle(frame, (bx, by), 12, (0, 165, 255), 2, cv2.LINE_AA)
+                    cv2.circle(frame, (bx, by), 3, (0, 165, 255), -1, cv2.LINE_AA)
+
+                writer.write(frame)
+                f += 1
+            writer.release()
+
+            if os.path.exists(temp_raw):
+                if ffmpeg_exe:
+                    subprocess.run([
+                        ffmpeg_exe, "-y", "-i", temp_raw,
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast",
+                        "-movflags", "+faststart", output_path
+                    ], capture_output=True, text=True)
+                if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+                    os.replace(temp_raw, output_path)
+                elif os.path.exists(temp_raw):
+                    os.remove(temp_raw)
 
         cap.release()
-        if use_ffmpeg_pipe and proc:
-            if proc.stdin:
-                try:
-                    proc.stdin.close()
-                except Exception:
-                    pass
-            stderr_log = proc.stderr.read().decode('utf-8', errors='ignore') if proc.stderr else ""
-            proc.wait()
-            if proc.returncode != 0:
-                print(f"FFmpeg error (code {proc.returncode}): {stderr_log}", flush=True)
-        elif writer:
-            writer.release()
 
 
 
