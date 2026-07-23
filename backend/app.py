@@ -132,7 +132,7 @@ def _run_job(filename, input_path):
     safe_stem = secure_filename(stem)
     if not safe_stem:
         safe_stem = f"video_{int(time.time())}"
-    output_name = f"annotated_{safe_stem}.mp4"
+    output_name = f"annotated_{safe_stem}.webm"
     output_path = os.path.join(OUTPUTS_DIR, output_name)
     try:
         processor = get_processor()
@@ -260,7 +260,7 @@ def serve_output(filename):
         if os.path.isfile(converted_path) and os.path.getsize(converted_path) > 1000:
             target_file = converted_name
 
-    mimetype = "video/mp4" if target_file.lower().endswith(".mp4") else None
+    mimetype = "video/webm" if target_file.lower().endswith(".webm") else ("video/mp4" if target_file.lower().endswith(".mp4") else None)
     response = send_from_directory(OUTPUTS_DIR, target_file, mimetype=mimetype, conditional=True)
     response.headers["Accept-Ranges"] = "bytes"
     response.headers["Access-Control-Allow-Origin"] = "*"
