@@ -456,7 +456,7 @@ class VideoProcessor:
         w = w if w % 2 == 0 else w - 1
         h = h if h % 2 == 0 else h - 1
 
-        fourcc = cv2.VideoWriter_fourcc(*"avc1")
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
 
         f = 0
@@ -493,3 +493,18 @@ class VideoProcessor:
 
         writer.release()
         cap.release()
+
+        # Convert the mp4v file to a browser-compatible H.264 file using the container's ffmpeg
+        try:
+            import subprocess
+            temp_path = output_path + ".h264.mp4"
+            subprocess.run([
+                "ffmpeg", "-y", "-loglevel", "error", 
+                "-i", output_path, 
+                "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+                temp_path
+            ], check=True)
+            if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+                os.replace(temp_path, output_path)
+        except Exception as e:
+            print(f"Failed to convert to h264: {e}", flush=True)
