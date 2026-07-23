@@ -533,7 +533,7 @@ class VideoProcessor:
             print("Using OpenCV VideoWriter fallback + FFmpeg re-encode...", flush=True)
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             temp_raw = output_path + ".raw.mp4"
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            fourcc = cv2.VideoWriter_fourcc(*"avc1")
             writer = cv2.VideoWriter(temp_raw, fourcc, fps, (w, h))
             f = 0
             while True:
