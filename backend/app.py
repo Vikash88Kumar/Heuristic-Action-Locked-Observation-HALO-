@@ -252,6 +252,8 @@ def serve_output(filename):
     mimetype = "video/mp4" if target_file.lower().endswith(".mp4") else None
     response = send_from_directory(OUTPUTS_DIR, target_file, mimetype=mimetype, conditional=True)
     response.headers["Accept-Ranges"] = "bytes"
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
 

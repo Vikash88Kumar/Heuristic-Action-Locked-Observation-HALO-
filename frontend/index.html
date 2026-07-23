@@ -1453,11 +1453,24 @@
       setStatus('ready', 'Ready');
       videoTag.textContent = `${data.result.fps_source} fps source · ${data.result.duration_sec}s`;
       videoEmptyNote.style.display = 'none';
-      videoPreview.innerHTML = `<video controls autoplay muted src="${getApiHost()}${data.annotated_url}"></video>`;
+      const videoUrl = `${getApiHost()}${data.annotated_url}`;
+      videoPreview.innerHTML = `<video id="annotatedVideoPlayer" controls autoplay muted playsinline preload="auto" src="${videoUrl}"></video>`;
+      const vPlayer = el('annotatedVideoPlayer');
+      if (vPlayer) {
+        const startPlayback = () => {
+          if (vPlayer.currentTime === 0 && vPlayer.duration > 0.2) {
+            vPlayer.currentTime = 0.1;
+          }
+          vPlayer.play().catch(() => {});
+        };
+        vPlayer.addEventListener('loadedmetadata', startPlayback);
+        vPlayer.addEventListener('canplay', startPlayback);
+        startPlayback();
+      }
       renderCommentary(data.result.commentary);
       renderEvents(data.result.events);
       renderKpis(data.result.kpis);
-      statusEl.innerHTML = `Processed <b>${filename}</b> successfully. <a href="${getApiHost()}${data.annotated_url}" target="_blank">Open annotated video</a>`;
+      statusEl.innerHTML = `Processed <b>${filename}</b> successfully. <a href="${videoUrl}" target="_blank">Open annotated video</a>`;
 
       currentFilename = filename;
       tacticsButton.disabled = false;
