@@ -470,6 +470,7 @@ class VideoProcessor:
             try:
                 cmd = [
                     ffmpeg_exe, "-y",
+                    "-loglevel", "error",
                     "-f", "rawvideo",
                     "-vcodec", "rawvideo",
                     "-s", f"{w}x{h}",
@@ -482,7 +483,7 @@ class VideoProcessor:
                     "-movflags", "+faststart",
                     output_path
                 ]
-                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
                 f = 0
                 while True:
                     ok, frame = cap.read()
@@ -515,13 +516,16 @@ class VideoProcessor:
                         pct = 72 + int(27 * f / total_frames)
                         progress_cb(min(pct, 99), f"Synthesize: rendering frame {f}/{total_frames}")
 
-                proc.stdin.close()
+                if proc.stdin:
+                    try:
+                        proc.stdin.close()
+                    except Exception:
+                        pass
                 proc.wait()
                 if proc.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
                     pipe_success = True
                 else:
-                    stderr_log = proc.stderr.read().decode('utf-8', errors='ignore') if proc.stderr else ""
-                    print(f"FFmpeg pipe finished with code {proc.returncode}: {stderr_log}", flush=True)
+                    print(f"FFmpeg pipe finished with code {proc.returncode}", flush=True)
             except Exception as e:
                 print(f"FFmpeg pipe rendering failed: {e}", flush=True)
 
@@ -564,7 +568,7 @@ class VideoProcessor:
             if os.path.exists(temp_raw):
                 if ffmpeg_exe:
                     subprocess.run([
-                        ffmpeg_exe, "-y", "-i", temp_raw,
+                        ffmpeg_exe, "-y", "-loglevel", "error", "-i", temp_raw,
                         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast",
                         "-movflags", "+faststart", output_path
                     ], capture_output=True, text=True)
