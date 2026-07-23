@@ -264,6 +264,7 @@ def serve_output(filename):
     response = send_from_directory(OUTPUTS_DIR, target_file, mimetype=mimetype, conditional=True)
     response.headers["Accept-Ranges"] = "bytes"
     response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Cache-Control"] = "public, max-age=3600"
     return response
 
 
