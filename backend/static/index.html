@@ -1454,11 +1454,24 @@
       videoTag.textContent = `${data.result.fps_source} fps source · ${data.result.duration_sec}s`;
       videoEmptyNote.style.display = 'none';
       const videoUrl = `${getApiHost()}${data.annotated_url}`;
-      videoPreview.innerHTML = `<video id="annotatedVideoPlayer" controls autoplay muted playsinline preload="auto" src="${videoUrl}"></video>`;
-      const vPlayer = el('annotatedVideoPlayer');
-      if (vPlayer) {
-        vPlayer.play().catch(() => {});
-      }
+      videoPreview.innerHTML = `<div style="padding:20px;color:#888;">Buffering video for playback...</div>`;
+      fetch(videoUrl)
+        .then(response => {
+          if (!response.ok) throw new Error("Network response was not ok");
+          return response.blob();
+        })
+        .then(blob => {
+          const objUrl = URL.createObjectURL(blob);
+          videoPreview.innerHTML = `<video id="annotatedVideoPlayer" controls autoplay muted playsinline preload="auto" src="${objUrl}"></video>`;
+          const vPlayer = el('annotatedVideoPlayer');
+          if (vPlayer) vPlayer.play().catch(() => {});
+        })
+        .catch(err => {
+          console.error("Blob fetch failed, falling back to direct URL:", err);
+          videoPreview.innerHTML = `<video id="annotatedVideoPlayer" controls autoplay muted playsinline preload="auto" src="${videoUrl}"></video>`;
+          const vPlayer = el('annotatedVideoPlayer');
+          if (vPlayer) vPlayer.play().catch(() => {});
+        });
       renderCommentary(data.result.commentary);
       renderEvents(data.result.events);
       renderKpis(data.result.kpis);
