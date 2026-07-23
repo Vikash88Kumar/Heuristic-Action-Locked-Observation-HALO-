@@ -51,6 +51,7 @@ for d in (INPUTS_DIR, UPLOADS_DIR, OUTPUTS_DIR):
 ALLOWED_EXT = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB upload limit
 
 
 # --------------------------------------------------------------------------
