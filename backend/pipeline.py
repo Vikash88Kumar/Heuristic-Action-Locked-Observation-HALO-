@@ -456,7 +456,7 @@ class VideoProcessor:
         w = w if w % 2 == 0 else w - 1
         h = h if h % 2 == 0 else h - 1
 
-        fourcc = cv2.VideoWriter_fourcc(*"vp80")
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
 
         f = 0

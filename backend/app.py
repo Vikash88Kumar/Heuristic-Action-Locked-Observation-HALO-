@@ -132,7 +132,7 @@ def _run_job(filename, input_path):
     safe_stem = secure_filename(stem)
     if not safe_stem:
         safe_stem = f"video_{int(time.time())}"
-    output_name = f"annotated_{safe_stem}.webm"
+    output_name = f"annotated_{safe_stem}.mp4"
     output_path = os.path.join(OUTPUTS_DIR, output_name)
     try:
         processor = get_processor()
