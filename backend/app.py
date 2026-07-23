@@ -29,6 +29,8 @@ import traceback
 import time
 
 from flask import Flask, request, jsonify, send_from_directory
+from werkzeug.utils import secure_filename
+from urllib.parse import unquote
 
 from models import load_jersey_cnn, load_ccnn_filter
 from pipeline import VideoProcessor, DEVICE
@@ -186,7 +188,11 @@ def upload_video():
     if ext not in ALLOWED_EXT:
         return jsonify({"success": False, "error": f"Unsupported file type '{ext}'."}), 400
 
-    safe_name = f"{int(time.time())}_{os.path.basename(file.filename)}"
+    raw_safe = secure_filename(file.filename)
+    if not raw_safe or raw_safe.startswith('.'):
+        raw_safe = f"clip_{int(time.time())}{ext}"
+
+    safe_name = f"{int(time.time())}_{raw_safe}"
     save_path = os.path.join(UPLOADS_DIR, safe_name)
     file.save(save_path)
 
@@ -238,6 +244,7 @@ def result(filename):
 
 @app.route("/outputs/<path:filename>", methods=["GET"])
 def serve_output(filename):
+    filename = unquote(filename)
     output_path = os.path.join(OUTPUTS_DIR, filename)
     if not os.path.isfile(output_path):
         return jsonify({"error": "File not found"}), 404
